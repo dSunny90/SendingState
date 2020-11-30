@@ -1,1 +1,110 @@
 # SendingState
+
+➡️ SendingState is a lightweight Swift framework that helps you cleanly structure UI components
+
+[![SwiftPM compatible](https://img.shields.io/badge/SwiftPM-compatible-brightgreen.svg)](https://swift.org/package-manager/) ![Swift](https://img.shields.io/badge/Swift-5.0-orange.svg) ![Platform](https://img.shields.io/badge/platform-iOS%208%20%7C%20macOS%2010.10%20%7C%20tvOS%209%20%7C%20watchOS%202-brightgreen) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+## Purpose
+
+- **Configurable**  
+  Components receive models for configuration.
+
+---
+
+When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
+
+**SendingState** gives every component a clear way to receive state through a unidirectional pipeline.
+
+The name reflects its core principle:
+
+- **Send** models to views (configure)
+
+Let's look at what typically goes wrong when we mix UI, state, and logic without clear boundaries.
+
+### 💣 The Usual UI Chaos
+
+#### Configurations that mutate passed-in state
+
+```swift
+class MyCell: UITableViewCell {
+    private var data: MyData?
+
+    func configure(_ data: MyData?) {
+        self.data = data
+        titleLabel.text = data?.title
+        // also updates imageView, buttons, etc.
+    }
+
+    func changeData() {
+        self.data?.title = "error"
+    }
+}
+```
+
+#### Problems:
+
+- Stores and mutates input state internally
+- Breaks unidirectional data flow
+- Introduces side effects and hidden state changes
+
+### 🛠️ With **SendingState**
+
+#### Stateless configuration
+
+```swift
+class MyView: UIView, Configurable {
+    var configurer: (MyView, MyModel) -> Void {
+        { view, model in
+            view.titleLabel.text = model.title
+        }
+    }
+}
+
+class MyViewController: UIViewController {
+    func updateUI(with data: MyModel) {
+        myView.ss.configure(data)
+    }
+}
+```
+
+#### Benefits:
+
+- No internal state mutation
+- Clear unidirectional data flow
+- Decoupled and testable UI components
+
+---
+
+## Usage
+
+### Configurable:
+
+1. Adopt the `Configurable` protocol in your view
+2. Implement the **configurer** to define how the view updates with a model
+3. Call `aView.ss.configure(model)` whenever you want to apply new data
+
+The data flows in one direction only — from model to view.
+No need to capture self or worry about memory leaks — all closures are safely handled.
+
+---
+
+## Installation
+
+SendingState is available via Swift Package Manager.
+
+### Using Xcode:
+
+1. Open your project in Xcode
+2. Go to File > Add Packages…
+3. Enter the URL:  
+```
+https://github.com/dSunny90/SendingState
+```
+4. Select the version and finish
+
+### Using Package.swift:
+```swift
+dependencies: [
+    .package(url: "https://github.com/dSunny90/SendingState", from: "0.1.0")
+]
+```
