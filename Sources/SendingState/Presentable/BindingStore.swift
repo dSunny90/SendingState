@@ -145,6 +145,15 @@ private extension NSObject {
     }
 }
 
+public extension BindingStore {
+    /// Erases the concrete type for flexible APIs.
+    ///
+    /// Preserves binding behavior while hiding the concrete type.
+    /// - Returns: A type-erased wrapper.
+    @inlinable
+    func eraseToAnyBindingStore() -> AnyBindingStore { AnyBindingStore(self) }
+}
+
 extension BindingStore: Hashable {
     public static func == (
         lhs: BindingStore<State, Binder>,
