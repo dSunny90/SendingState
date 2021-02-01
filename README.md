@@ -7,7 +7,10 @@
 ## Purpose
 
 - **Configurable**  
-  A component receives a model to configure itself
+  A component receives a model to configure itself.
+  
+- **Bindable**
+  A view model binds its state to a Configurable component.
 
 When you’re building a data-driven UI in Swift, it’s common to fall into a mix of patterns — configuring views directly and juggling internal state inside UI components.
 These approaches often work… until your app scales. Then things get messy.
@@ -18,6 +21,7 @@ It gives every component a clean way to receive state.
 Because it’s all about **sending**.
 
 - Sending model to a view (configure)
+- Sending viewModel to a view (bind)
 
 Think of it as the unidirectional pipeline for your component logic
 
@@ -47,7 +51,9 @@ class MyCell: UITableViewCell {
 - Breaks one-way data flow principles
 - Introduces side effects and hidden state changes
 
-### 🛠️ With **Configurable**
+### 🛠️ With **SendingState**
+
+#### Stateless configuration
 
 ```swift
 class MyView: UIView, Configurable {
@@ -68,6 +74,20 @@ class MyViewController: UIViewController {
 - **Unidirectional data flow** – Data goes in via configure, no implicit feedback loop
 - **Decoupled and testable UI** – View logic is stateless and easy to verify
 
+#### Safe binding
+
+```swift
+class MyViewController: UIViewController {
+    func bindViewModel(with viewModel: MyViewModel) {
+        viewModel.bind(to: myView)
+    }
+}
+```
+
+- **One-way binding from logic to view** – ViewModel updates the view, not the other way around
+- **No retained or leaked state in the view** – View remains stateless and passive
+- **Easy to compose and replace view logic** – ViewModel controls flow without modifying UI internals
+
 ---
 
 ## Usage
@@ -80,6 +100,12 @@ class MyViewController: UIViewController {
 
 The data flows in one direction only — from model to view.
 No need to capture self or worry about memory leaks — all closures are safely handled.
+
+### Bindable:
+
+1. After adopting Configurable, conform your view to Bindable.
+2. Implement the binding logic so your ViewModel can update the view reactively.
+3. Use `viewModel.bind(to: view)` to connect the two.
 
 ---
 
