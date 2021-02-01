@@ -9,6 +9,9 @@
 - **Configurable**  
   Components receive models for configuration.
 
+- **Bindable**  
+  View models deliver state snapshots to views through one-way binding.
+
 ---
 
 When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
@@ -18,6 +21,7 @@ When building data-driven UIs in Swift, it's common to fall into a mix of patter
 The name reflects its core principle:
 
 - **Send** models to views (configure)
+- **Send** view models to views (bind)
 
 Let's look at what typically goes wrong when we mix UI, state, and logic without clear boundaries.
 
@@ -73,6 +77,22 @@ class MyViewController: UIViewController {
 - Clear unidirectional data flow
 - Decoupled and testable UI components
 
+#### Safe binding
+
+```swift
+class MyViewController: UIViewController {
+    func bindViewModel(with viewModel: MyViewModel) {
+        viewModel.apply(to: myView)
+    }
+}
+```
+
+#### Benefits:
+
+- View models control updates without modifying UI internals
+- No retained or leaked state in views
+- Easy to compose and swap view logic
+
 ---
 
 ## Usage
@@ -85,6 +105,12 @@ class MyViewController: UIViewController {
 
 The data flows in one direction only — from model to view.
 No need to capture self or worry about memory leaks — all closures are safely handled.
+
+### Bindable:
+
+1. After adopting `Configurable`, conform your view model to `Bindable`
+2. Implement the binding logic so your view model can deliver state to the view
+3. Use `viewModel.apply(to: view)` to apply the state
 
 ---
 
@@ -105,6 +131,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "0.1.0")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "0.2.0")
 ]
 ```
