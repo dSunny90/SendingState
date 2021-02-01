@@ -122,6 +122,16 @@ public final class BindingStore<State, Binder: NSObject & Configurable>
     }
 }
 
+private struct _BindingStoreEncodablePayload<State: Encodable>: Encodable {
+    let state: State
+    let binderType: String
+}
+
+private struct _BindingStoreDecodablePayload<State: Decodable>: Decodable {
+    let state: State
+    let binderType: String
+}
+
 public extension BindingStore {
     /// Erases the concrete type for flexible APIs.
     ///
@@ -141,5 +151,102 @@ extension BindingStore: Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(ObjectIdentifier(self))
+    }
+}
+
+public extension BindingStore where State: Encodable {
+    /// Encodes the store's current state as a JSON payload.
+    ///
+    /// The resulting object contains two fields:
+    /// - `state`: the encoded `State` value
+    /// - `binderType`: the type name of the associated `Binder`
+    ///
+    /// - Parameter prettyPrinted: Pass `true` to format the output
+    ///                            for readability. Defaults to `false`.
+    /// - Returns: UTF-8 encoded JSON data.
+    func toJSONData(prettyPrinted: Bool = false) throws -> Data {
+        let payload = _BindingStoreEncodablePayload(
+            state: state,
+            binderType: String(describing: Binder.self)
+        )
+        let encoder = JSONEncoder()
+        if prettyPrinted { encoder.outputFormatting.insert(.prettyPrinted) }
+        return try encoder.encode(payload)
+    }
+
+    /// Returns the store's current state as a JSON string.
+    ///
+    /// See ``toJSONData(prettyPrinted:)`` for the payload structure.
+    ///
+    /// - Parameter prettyPrinted: Pass `true` to format the output
+    ///                            for readability. Defaults to `false`.
+    /// - Returns: A UTF-8 JSON string.
+    func toJSONString(prettyPrinted: Bool = false) throws -> String {
+        let data = try toJSONData(prettyPrinted: prettyPrinted)
+        return String(decoding: data, as: UTF8.self)
+    }
+}
+
+public extension BindingStore where State: Decodable {
+    /// Creates a new store by decoding a `State` value from JSON data.
+    ///
+    /// - Parameters:
+    ///   - data: UTF-8 encoded JSON representing `State`.
+    ///   - decoder: The decoder to use. Defaults to a new `JSONDecoder`.
+    /// - Returns: A new store whose `state` is decoded from `data`.
+    /// - Throws: A decoding error if `data` cannot be decoded as `State`.
+    static func decode(
+        from data: Data,
+        using decoder: JSONDecoder = JSONDecoder()
+    ) throws -> Self {
+        let state = try decoder.decode(State.self, from: data)
+        return .init(state: state)
+    }
+
+    /// Creates a new store by decoding a `State` value from a JSON string.
+    ///
+    /// See ``decode(from:using:)-data`` for error behavior.
+    ///
+    /// - Parameters:
+    ///   - jsonString: A UTF-8 JSON string representing `State`.
+    ///   - decoder: The decoder to use. Defaults to a new `JSONDecoder`.
+    /// - Returns: A new store whose `state` is decoded from `jsonString`.
+    /// - Throws: `CocoaError(.fileReadInapplicableStringEncoding)` if
+    ///           `jsonString` cannot be converted to UTF-8 data, or a
+    ///           decoding error if the data cannot be decoded as `State`.
+    static func decode(
+        from jsonString: String,
+        using decoder: JSONDecoder = JSONDecoder()
+    ) throws -> Self {
+        guard let data = jsonString.data(using: .utf8) else {
+            throw CocoaError(.fileReadInapplicableStringEncoding)
+        }
+        return try decode(from: data, using: decoder)
+    }
+
+    /// Decodes a `State` value from JSON data and updates the store.
+    ///
+    /// - Parameters:
+    ///   - data: UTF-8 encoded JSON representing `State`.
+    ///   - decoder: The decoder to use. Defaults to a new `JSONDecoder`.
+    /// - Throws: A decoding error if `data` cannot be decoded as `State`.
+    func updateState(fromJSONData data: Data,
+                     using decoder: JSONDecoder = JSONDecoder()) throws {
+        let decoded = try decoder.decode(State.self, from: data)
+        self.state = decoded
+    }
+
+    /// Decodes a `State` value from a JSON string and updates the store.
+    ///
+    /// See ``updateState(fromJSONData:using:)`` for error behavior.
+    ///
+    /// - Parameters:
+    ///   - jsonString: A UTF-8 JSON string representing `State`.
+    ///   - decoder: The decoder to use. Defaults to a new `JSONDecoder`.
+    /// - Throws: A decoding error if `jsonString` cannot be decoded as `State`.
+    func updateState(fromJSONString jsonString: String,
+                     using decoder: JSONDecoder = JSONDecoder()) throws {
+        let data = Data(jsonString.utf8)
+        try updateState(fromJSONData: data, using: decoder)
     }
 }
