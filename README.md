@@ -133,6 +133,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "0.2.0")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "0.2.1")
 ]
 ```
