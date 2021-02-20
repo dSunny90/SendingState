@@ -112,6 +112,8 @@ No need to capture self or worry about memory leaks — all closures are safely 
 2. Implement the binding logic so your view model can deliver state to the view
 3. Use `viewModel.apply(to: view)` to apply the state
 
+For collections of views driven by arrays of data, use `AnyBindable` to erase types and bind them in a loop — no type gymnastics required.
+
 ---
 
 ## Installation
