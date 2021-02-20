@@ -32,4 +32,50 @@ final class BindableTests: XCTestCase {
 
         XCTAssertEqual(obj.inputValue, "Hello")
     }
+
+    func testAnyBindableConfiguresBinderCorrectly() {
+        let model = TestModel(contentData: "Hello")
+        let erased = AnyBindable(model)
+        let obj = TestObject()
+
+        erased.bind(to: obj)
+
+        XCTAssertEqual(obj.inputValue, "Hello")
+    }
+
+    func testAnyBindableDoesNotCrashOnInvalidBinder() {
+        let model = TestModel(contentData: "Hello")
+        let erased = AnyBindable(model)
+
+        // Pass unrelated type as binder – should be no crash or side effect
+        class Dummy {}
+
+        let dummy = Dummy()
+        XCTAssertNoThrow(erased.bind(to: dummy))
+    }
+
+    func testBindableThreadSafetyUnderLoad() {
+        let model = TestModel(contentData: "ThreadSafe")
+        let erased = AnyBindable(model)
+        let expectation = XCTestExpectation(description: "Thread safety check")
+
+        let obj = TestObject()
+        let queue = DispatchQueue.global(qos: .userInitiated)
+
+        let group = DispatchGroup()
+        for _ in 0..<1000 {
+            group.enter()
+            queue.async {
+                erased.bind(to: obj)
+                group.leave()
+            }
+        }
+
+        group.notify(queue: .main) {
+            XCTAssertEqual(obj.inputValue, "ThreadSafe")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 5.0)
+    }
 }

@@ -107,6 +107,9 @@ No need to capture self or worry about memory leaks — all closures are safely 
 2. Implement the binding logic so your ViewModel can update the view reactively.
 3. Use `viewModel.bind(to: view)` to connect the two.
 
+Want to drive a collection of views from an array of data?
+Use AnyBindable to erase the types and bind them in a loop — no type gymnastics, just clean bindings.
+
 ---
 
 ## Installation
