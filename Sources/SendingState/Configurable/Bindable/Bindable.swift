@@ -37,6 +37,12 @@ public extension Bindable {
         guard let input = contentData else { return }
         binder.configurer(binder, input)
     }
+
+    /// Erases the concrete type for flexible APIs.
+    ///
+    /// Preserves binding behavior while hiding the concrete type.
+    /// - Returns: A type-erased wrapper.
+    func eraseToAnyBindable() -> AnyBindable { AnyBindable(self) }
 }
 
 #if os(iOS) || targetEnvironment(macCatalyst)
