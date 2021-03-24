@@ -8,6 +8,10 @@
 /// A protocol for objects that can explicitly release resources
 /// when no longer needed.
 ///
+/// Types conforming to `AutoReleasable` are typically retained in a
+/// `SwiftPointerPool` and must release their internal resources
+/// (e.g., gesture recognizer targets, control event handlers) in `cleanup()`.
+///
 /// - Note: This protocol is primarily used for releasing resources
 ///   retained by system frameworks such as UIKit or AppKit
 ///   (e.g., gesture recognizers, control event targets).
@@ -18,5 +22,7 @@ internal protocol AutoReleasable: AnyObject {
     var ownerIdentifier: ObjectIdentifier? { get set }
 
     /// Releases retained resources explicitly.
+    ///
+    /// Typically invoked by `SwiftPointerPool` during deallocation.
     func cleanup()
 }
