@@ -25,6 +25,12 @@
 public protocol EventSendable {
     associatedtype Action
 
+    /// All registered sender-event-action mappings managed by this forwarder.
+    ///
+    /// Use this property to enumerate sender-event relationships, such as
+    /// when dynamically attaching targets or observing available events at runtime.
+    var allMappings: [(sender: AnyObject, event: SenderEvent, actions: [Action])] { get }
+
     /// Returns the actions for a given sender and event.
     ///
     /// Retrieves the actions to forward when a sender triggers an event.
