@@ -12,6 +12,12 @@
 public struct EventForwarderGroup<Action>: EventSendable {
     public typealias Sender = AnyObject
 
+    public var allMappings: [
+        (sender: AnyObject, event: SenderEvent, actions: [Action])
+    ] {
+        storage.flatMap { $0.allMappings }
+    }
+
     private let storage: [EventForwarder<Action>]
     internal var all: [EventForwarder<Action>] { storage }
 
