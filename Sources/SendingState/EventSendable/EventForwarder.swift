@@ -20,6 +20,12 @@ public struct EventForwarder<Action> {
     /// allowing actions to capture real-time sender state.
     public let mappings: [SenderEvent: () -> [Action]]
 
+    public var allMappings: [
+        (sender: AnyObject, event: SenderEvent, actions: [Action])
+    ] {
+        mappings.map { (sender: self.sender, event: $0.key, actions: $0.value()) }
+    }
+
     /// Returns the actions mapped to the given event.
     public func actions(for event: SenderEvent) -> [Action] {
         mappings[event]?() ?? []
