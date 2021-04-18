@@ -47,6 +47,8 @@ fileprivate typealias ActionHandlerBlock =
 import UIKit
 
 extension SendingState where Base: UIView & EventSendingProvider {
+    // MARK: - Add
+
     /// Registers the typed action handler so it receives events forwarded
     /// by this view's ``EventSendable`` mappings.
     ///
@@ -71,16 +73,29 @@ extension SendingState where Base: UIView & EventSendingProvider {
         }
     }
 
-    /// Removes all existing action handlers, then registers the given
-    /// typed handler as the sole receiver of this view's forwarded events.
+    /// Registers the type-erased action handler so it receives events
+    /// forwarded by this view's ``EventSendable`` mappings.
     ///
-    /// - Parameter provider: The handler to assign.
-    public func assignActionHandler<Provider: ActionHandlingProvider>(
-        to provider: Provider
-    ) {
-        removeAllActionHandlers()
-        addActionHandler(to: provider)
+    /// The handler is identified by its `ObjectIdentifier`, so adding the
+    /// same instance again is a no-op (idempotent).
+    ///
+    /// - Parameter provider: The type-erased handler to register.
+    public func addAnyActionHandler(to provider: AnyActionHandlingProvider) {
+        let ownerID = ObjectIdentifier(provider)
+        addEventHandlers(owner: ownerID) { sender, event in
+            { [weak base, weak sender, weak provider] _ in
+                guard let base = base, let sender = sender, let provider = provider
+                else { return }
+                let actions = base.eventForwarder.actions(for: sender,
+                                                          event: event)
+                for action in actions {
+                    provider.handle(action: action)
+                }
+            }
+        }
     }
+
+    // MARK: - Remove
 
     /// Removes the typed action handler from this view, cleaning up all
     /// event bindings that were created by ``addActionHandler(to:)``.
@@ -93,6 +108,15 @@ extension SendingState where Base: UIView & EventSendingProvider {
         removeEventHandlers(owner: ownerID)
     }
 
+    /// Removes the type-erased action handler from this view, cleaning up
+    /// all event bindings that were created by ``addAnyActionHandler(to:)``.
+    ///
+    /// - Parameter provider: The type-erased handler to remove.
+    public func removeAnyActionHandler(from provider: AnyActionHandlingProvider) {
+        let ownerID = ObjectIdentifier(provider)
+        removeEventHandlers(owner: ownerID)
+    }
+
     /// Removes **all** action handlers from this view and its senders,
     /// regardless of owner.
     public func removeAllActionHandlers() {
@@ -101,6 +125,31 @@ extension SendingState where Base: UIView & EventSendingProvider {
         }
         base.cleanupPointerPool()
     }
+
+    // MARK: - Assign (replace)
+
+    /// Removes all existing action handlers, then registers the given
+    /// typed handler as the sole receiver of this view's forwarded events.
+    ///
+    /// - Parameter provider: The handler to assign.
+    public func assignActionHandler<Provider: ActionHandlingProvider>(
+        to provider: Provider
+    ) {
+        removeAllActionHandlers()
+        addActionHandler(to: provider)
+    }
+
+    /// Removes all existing action handlers, then registers the given
+    /// type-erased handler as the sole receiver of this view's forwarded
+    /// events.
+    ///
+    /// - Parameter provider: The type-erased handler to assign.
+    public func assignAnyActionHandler(to provider: AnyActionHandlingProvider) {
+        removeAllActionHandlers()
+        addAnyActionHandler(to: provider)
+    }
+
+    // MARK: - Private Helpers
 
     /// Iterates through the base view's event forwarder mappings and
     /// registers gesture recognizer or control-event handlers for each
