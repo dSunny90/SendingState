@@ -79,6 +79,23 @@ extension EventSendableTests {
         }
     }
 
+    func test_button_addTarget_wired_with_typeErased_actionHandler() {
+        DispatchQueue.main.async {
+            let provider = EventForwarderButtonTestView()
+            let handler = TestActionHandler()
+            let anyActionHandler = AnyActionHandlingProvider(handler)
+
+            provider.ss.assignAnyActionHandler(to: anyActionHandler)
+
+            let targets = provider.button.allTargets
+            XCTAssertEqual(targets.count, 1)
+
+            let actions = provider.button.actions(forTarget: targets.first, forControlEvent: .touchUpInside)
+            XCTAssertNotNil(actions)
+            XCTAssertTrue(actions?.contains(where: { $0.contains("invoke") }) == true)
+        }
+    }
+
     func test_tapAndPinchGestureRecognizers_areAdded() {
         DispatchQueue.main.async {
             let provider = EventForwarderViewTestView()
