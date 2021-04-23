@@ -11,17 +11,21 @@
 
 - **Presentable**  
   Components expose current state and apply it to binders.
+  
+- **EventSendable**  
+    User interactions are forwarded as declarative actions.
 
 ---
 
-When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
+When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly, reacting to user events with @IBAction, and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
 
-**SendingState** gives every component a clear way to receive state through a unidirectional pipeline.
+**SendingState** gives every component a clear way to receive state, bind view models, and forward user intent through a unidirectional pipeline.
 
 The name reflects its core principle:
 
 - **Send** models to views (configure)
 - **Send** view models to views (bind)
+- **Send** user events back (forward)
 
 Let's look at what typically goes wrong when we mix UI, state, and logic without clear boundaries.
 
@@ -153,6 +157,15 @@ A component may need to hold its current state and apply that state to a binder.
 You can implement `Presentable` directly for custom state holders, but if you also need observation, `BindingStore` is the natural starting point.
 
 When you need to store heterogeneous `BindingStore` instances in a single collection, use `AnyBindingStore` to erase the concrete type — similar to how `AnyKeyPath` erases a key path's root and value types.
+
+### EventSendable:
+
+1. In views that handle user input (buttons, views with gestures), conform to `EventSendingProvider`
+2. Use `EventForwarder` blocks to declare which events trigger which actions
+3. In your view controller or interactor, conform to `ActionHandlingProvider` and handle actions centrally
+4. Use `aView.ss.addActionHandler(to: self.interactor)` to connect the flow
+    
+Your business logic is now cleanly separated and elegantly handled.
 
 ---
 
