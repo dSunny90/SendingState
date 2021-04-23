@@ -5,6 +5,8 @@
 //  Created by SunSoo Jeon on 20.11.2020.
 //
 
+import Foundation
+
 /// A namespace wrapper that provides SendingState functionality
 /// through the `.ss` accessor.
 ///
@@ -19,9 +21,38 @@ public struct SendingState<Base> {
 }
 
 extension SendingState where Base: Configurable {
-    /// Sugar for `configurer(self, input)`
+    /// Applies the given input to the base object via its `configurer`,
+    /// automatically storing the input as the object's state.
+    ///
+    /// When the base is an `NSObject` (e.g., `UIView`), an internal
+    /// ``StateObserver`` is lazily created and attached. The observer:
+    /// 1. Stores the input as the current state
+    /// 2. Calls the base's `configurer` to update the UI
+    ///
+    /// For non-`NSObject` bases, falls back to direct `configurer` invocation.
     public func configure<T>(_ input: T) where T == Base.Input {
-        base.configurer(base, input)
+        guard let object = base as? NSObject else {
+            base.configurer(base, input)
+            return
+        }
+        let observer = ensureObserver(on: object)
+        observer.update(input)
+    }
+
+    private func ensureObserver(on object: NSObject) -> StateObserver {
+        if let existing = object.stateObserver {
+            return existing
+        }
+
+        let observer = StateObserver()
+        observer.binder = object
+        observer.configureBlock = { [weak base] state in
+            guard let base = base, let input = state as? Base.Input
+            else { return }
+            base.configurer(base, input)
+        }
+        object.stateObserver = observer
+        return observer
     }
 }
 

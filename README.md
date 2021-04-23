@@ -6,22 +6,28 @@
 
 ## Purpose
 
+**SendingState** provides a consistent pattern for UI components to receive state and forward user interactions through unidirectional data flow.
+
 - **Configurable**  
   Components receive models for configuration.
 
 - **Bindable**  
   View models deliver state snapshots to views through one-way binding.
+  
+- **EventSendable**  
+    User interactions are forwarded as declarative actions.
 
 ---
 
-When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
+When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly, reacting to user events with @IBAction, and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
 
-**SendingState** gives every component a clear way to receive state through a unidirectional pipeline.
+**SendingState** gives every component a clear way to receive state, bind view models, and forward user intent through a unidirectional pipeline.
 
 The name reflects its core principle:
 
 - **Send** models to views (configure)
 - **Send** view models to views (bind)
+- **Send** user events back (forward)
 
 Let's look at what typically goes wrong when we mix UI, state, and logic without clear boundaries.
 
@@ -114,6 +120,20 @@ No need to capture self or worry about memory leaks — all closures are safely 
 
 For collections of views driven by arrays of data, use `AnyBindable` to erase types and bind them in a loop — no type gymnastics required.
 
+### EventSendable:
+
+1. In views that handle user input (buttons, views with gestures), conform to `EventSendingProvider`
+2. Use `EventForwarder` blocks to declare which events trigger which actions
+3. In your view controller or interactor, conform to `ActionHandlingProvider` and handle actions centrally
+4. Use `aView.ss.addActionHandler(to: self.interactor)` to connect the flow
+    
+Your business logic is now cleanly separated and elegantly handled.
+
+### State:
+
+When you call `ss.configure(model)`, the model is automatically stored as **state** on the view.
+If you need the model data, just read it from `self.ss.state()` — there’s no need to store it separately.
+
 ---
 
 ## Installation
@@ -133,6 +153,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "0.2.1")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "0.3.0")
 ]
 ```
