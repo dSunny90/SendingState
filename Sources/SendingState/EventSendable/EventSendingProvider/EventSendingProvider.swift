@@ -12,18 +12,16 @@
 ///
 /// For example:
 /// ```swift
-/// var eventForwarder: EventSendable {
-///     EventForwarderGroup([
-///         EventForwarder(sender: button, mapping: [
-///             .control(.init(.touchUpInside)): [MyAction.didTapButton]
-///         ]),
-///         EventForwarder(sender: toggle, mapping: [
-///             .control(.init(.valueChanged)): [.didToggleSwitch(toggle.isOn)]
-///         ]),
-///         EventForwarder(sender: slider, mapping: [
-///             .control(.init(.valueChanged)): [.didSlide(slider.value)]
-///         ])
-///     ])
+/// var eventForwarder: EventForwarderGroup<MyAction> {
+///     EventForwarder {
+///         EventForwarderItem(aButton as AnyObject) {
+///             control(.init(.touchUpInside)) { [MyAction.didTapButton] }
+///             gesture(.init(kind: .tap)) { [MyAction.singleTap] }
+///         }
+///         EventForwarderItem(bSlider as AnyObject) {
+///             control(.init(.valueChanged)) { [MyAction.didSlide] }
+///         }
+///     }.eraseToEventForwarderGroup()
 /// }
 /// ```
 ///
