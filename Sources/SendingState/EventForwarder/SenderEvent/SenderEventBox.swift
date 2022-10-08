@@ -30,7 +30,7 @@ internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
     /// - Parameter sender: The sender object that triggered the event.
     ///   This will be type-checked against the expected sender type at runtime.
     @objc internal func invoke(_ sender: Any) {
-        guard let sender as? Sender else { return }
+        guard let sender = sender as? Sender else { return }
         box?(sender)
     }
 
