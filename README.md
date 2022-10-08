@@ -1,8 +1,8 @@
 # SendingState
 
-➡️ SendingState is a lightweight Swift framework that helps you cleanly structure UI components
+➡️ SendingState is a lightweight Swift framework that helps you cleanly structure UI components around three clear roles: configuring, binding, and forwarding user interactions — all in a predictable, one-way flow.
 
-[![SwiftPM compatible](https://img.shields.io/badge/SwiftPM-compatible-brightgreen.svg)](https://swift.org/package-manager/) ![Swift](https://img.shields.io/badge/Swift-5.0-orange.svg) ![Platform](https://img.shields.io/badge/platform-iOS%208%20%7C%20macOS%2010.10%20%7C%20tvOS%209%20%7C%20watchOS%202-brightgreen) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![SwiftPM compatible](https://img.shields.io/badge/SwiftPM-compatible-brightgreen.svg)](https://swift.org/package-manager/) ![Swift](https://img.shields.io/badge/Swift-5.7-orange.svg) ![Platform](https://img.shields.io/badge/platform-iOS%2012%20%7C%20macOS%2010.13%20%7C%20tvOS%2012%20%7C%20watchOS%204-brightgreen) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Purpose
 
@@ -12,8 +12,8 @@
 - **Presentable**  
   Components expose current state and apply it to binders.
   
-- **EventSendable**  
-    User interactions are forwarded as declarative actions.
+- **EventForwarder**  
+  User interactions are forwarded as declarative actions. Action closures can access the bound state directly — no manual state passing needed.
 
 ---
 
@@ -77,6 +77,41 @@ class MyViewController: UIViewController {
 - Easy to get out of sync when multiple views share the same data
 - Boilerplate grows fast as state gets more complex
 
+### 💣 Business logic inside UI selectors
+
+```swift
+@objc func didTapConfirmButton(_ sender: UIButton) {
+    guard user.isVerified else {
+        showVerificationAlert()
+        return
+    }
+
+    viewModel.proceedToNextStep(userID: user.id)
+}
+```
+
+#### Problems:
+
+- UI events are tightly coupled with application logic
+- Hard to test, reuse, or refactor independently
+
+### 💣 Gesture handling with scattered selectors
+
+```swift
+@objc func handleTap() {
+    self.tapGestureClosure?()
+}
+
+@objc func didTapButton(_ sender: UIButton) {
+    self.didTapClosure?(sender)
+}
+```
+
+#### Problems:
+
+- Event logic is spread across multiple methods
+- Hard to trace which UI triggers which action
+
 ### 🛠️ With **SendingState**
 
 #### Stateless configuration
@@ -128,6 +163,49 @@ class MyViewController: UIViewController {
 - Changes from the view are written back into the store
 - Clean observation API with automatic lifetime management via `StateObservationToken`
 
+#### Forward Events, Handle Actions in the Interactor
+
+```swift
+class MyCell: UITableViewCell, EventForwardingProvider {
+    var eventForwarder: EventForwardable {
+        SenderGroup {
+            EventForwarder(button) { sender, ctx in
+                ctx.control([.touchUpInside]) {
+                    [MyAction.sendClickLog, .applyFilter(sender.tag)]
+                }
+            }
+            EventForwarder(aView) { _, ctx in
+                ctx.tapGesture() { [MyAction.sendClickLog] }
+            }
+            EventForwarder(slider) { sender, ctx in
+                ctx.control(.valueChanged) {
+                    [MyAction.sendClickLog, .changeSlider(sender.value)]
+                }
+            }
+        }
+    }
+}
+
+class MyInteractor: NSObject, ActionHandlingProvider {
+    func handle(action: MyAction) {
+        switch action {
+        case .sendClickLog:
+            // send click log
+        case .applyFilter(let tag):
+            // apply filter
+        case .changeSlider(let value):
+            // change slider
+        }
+    }
+}
+```
+
+#### Benefits:
+
+- Declarative event mapping with clear local definitions
+- Views forward events, interactors handle logic
+- Easy to add actions without touching UI code
+
 ---
 
 ## Usage
@@ -158,14 +236,58 @@ You can implement `Presentable` directly for custom state holders, but if you al
 
 When you need to store heterogeneous `BindingStore` instances in a single collection, use `AnyBindingStore` to erase the concrete type — similar to how `AnyKeyPath` erases a key path's root and value types.
 
-### EventSendable:
+### EventForwardable:
 
-1. In views that handle user input (buttons, views with gestures), conform to `EventSendingProvider`
+1. In views that handle user input (buttons, views with gestures), conform to `EventForwardingProvider`
 2. Use `EventForwarder` blocks to declare which events trigger which actions
 3. In your view controller or interactor, conform to `ActionHandlingProvider` and handle actions centrally
 4. Use `aView.ss.addActionHandler(to: self.interactor)` to connect the flow
     
 Your business logic is now cleanly separated and elegantly handled.
+
+#### State-aware EventForwarder
+
+Instead of manually calling `sender.ss.state()` inside closures, use the **state-aware overload** to receive typed state directly as a closure parameter:
+
+```swift
+class MyCell: UITableViewCell, Configurable, EventForwardingProvider {
+    let button = UIButton()
+
+    var configurer: (MyCell, MyModel) -> Void {
+        { cell, model in
+            DispatchQueue.main.async {
+                cell.button.setTitle(model.title, for: .normal)
+            }
+        }
+    }
+
+    var eventForwarder: EventForwardable {
+        EventForwarder(button) { _, ctx in
+            ctx.control(.touchUpInside) { (state: MyModel) in
+                [MyAction.buttonTapped(state.id)]
+            }
+        }
+    }
+}
+```
+
+The state is resolved lazily at **event time** (when the user taps the button), not at setup time. This means it always reflects the latest configured model — even after cell reuse with new data.
+
+All `SenderEventMappingContext` methods support both signatures:
+
+```swift
+// Without state — captures sender directly
+ctx.control(.touchUpInside) {
+    [MyAction.buttonTapped(sender.tag)]
+}
+
+// With state — receives typed model from boundState
+ctx.control(.touchUpInside) { (state: MyModel) in
+    [MyAction.buttonTapped(state.id)]
+}
+```
+
+This also works with gesture mappings: `tapGesture`, `longPressGesture`, `swipeGesture`, `panGesture`, `pinchGesture`, `rotationGesture`, `screenEdgeGesture`, and `hoverGesture`.
 
 ---
 
@@ -186,6 +308,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "0.1.0")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "0.2.0")
 ]
 ```
