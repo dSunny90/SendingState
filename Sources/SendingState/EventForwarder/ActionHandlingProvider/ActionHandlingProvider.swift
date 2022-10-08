@@ -7,6 +7,10 @@
 
 /// A class-only protocol that defines an action handler for UI events.
 ///
+/// A common usage pattern is for an `EventForwardingProvider`
+/// (e.g., a view or UI component) to call `assignActionHandler(to:)`
+/// from a `SendingState` extension, passing this.
+///
 /// This protocol allows separation of UI interactions from business logic
 /// by delegating action handling to dedicated objects.
 public protocol ActionHandlingProvider: AnyObject {

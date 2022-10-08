@@ -27,7 +27,8 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
     ///   - recognizer: The gesture recognizer to observe.
     ///   - states: Gesture states that trigger the action.
     ///   - actionHandler: The closure to invoke on gesture event.
-    @inlinable internal init(
+    @inlinable
+    internal init(
         recognizer: T,
         on states: Set<UIGestureRecognizer.State> = [.recognized],
         actionHandler: @escaping (T) -> Void
@@ -44,9 +45,8 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
     @objc override func invoke(_ sender: Any) {
         DispatchQueue.main.async {
             guard let recognizer = sender as? T else { return }
-            guard
-                self.allowedStates.isEmpty ||
-                self.allowedStates.contains(recognizer.state)
+            guard self.allowedStates.isEmpty ||
+                  self.allowedStates.contains(recognizer.state)
             else { return }
             self.box?(recognizer)
         }

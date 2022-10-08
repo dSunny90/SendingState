@@ -25,7 +25,8 @@ internal final class UIControlSenderEventBox: SenderEventBox<UIControl> {
     ///   - control: The UIControl to attach the action to.
     ///   - events: The event to handle (e.g., .touchUpInside).
     ///   - actionHandler: The closure to invoke on event.
-    @inlinable internal init(
+    @inlinable
+    internal init(
         control: UIControl,
         on events: UIControl.Event,
         actionHandler: @escaping (UIControl) -> Void

@@ -65,7 +65,7 @@ final class LabelViewTests: XCTestCase {
 
         static func size(with input: Model?,
                          constrainedTo parentSize: CGSize?) -> CGSize? {
-            guard let input = input else { return nil }
+            guard let input else { return nil }
             let width = parentSize?.width ?? 100
             let height = input.text.count > 10 ? 60 : 40
             return CGSize(width: width, height: CGFloat(height))

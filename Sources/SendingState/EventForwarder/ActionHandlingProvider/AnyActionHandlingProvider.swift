@@ -10,7 +10,7 @@ public final class AnyActionHandlingProvider {
 
     public init<T: ActionHandlingProvider>(_ base: T) {
         _handle = { [weak base] action in
-            guard let base = base else { return }
+            guard let base else { return }
             if let typedAction = action as? T.Action {
                 base.handle(action: typedAction)
             }
