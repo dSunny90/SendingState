@@ -1,5 +1,5 @@
 //
-//  EventSendableTests.swift
+//  EventForwardableTests.swift
 //  SendingState
 //
 //  Created by SunSoo Jeon on 05.04.2021.
@@ -15,54 +15,35 @@ import XCTest
 
 @testable import SendingState
 
-final class EventSendableTests: XCTestCase {}
+final class EventForwardableTests: XCTestCase {}
 
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
-final class EventForwarderButtonTestView: UIView, EventSendingProvider {
+final class EventForwarderButtonTestView: UIView, EventForwardingProvider {
     let button = UIButton()
-    let toggle = UISwitch()
-    let slider = UISlider()
 
-    var eventForwarder: EventSendable {
-        EventForwarderGroup<TestAction>([
-            EventForwarder(sender: button, mappings: [
-                .control(.init(.touchUpInside)): { [weak self] in
-                    guard let self = self else { return [] }
-                    return [.buttonTapped(self.button.tag)]
-                }
-            ]),
-            EventForwarder(sender: toggle, mappings: [
-                .control(.init(.valueChanged)): { [weak self] in
-                    guard let self = self else { return [] }
-                    return [.switchChanged(self.toggle.isOn)]
-                }
-            ]),
-            EventForwarder(sender: slider, mappings: [
-                .control(.init(.valueChanged)): { [weak self] in
-                    guard let self = self else { return [] }
-                    return [.sliderChanged(self.slider.value)]
-                }
-            ])
-        ])
+    var eventForwarder: EventForwardable {
+        EventForwarder(button) { sender, ctx in
+            ctx.control([.touchUpInside]) {
+                [TestAction.buttonTapped(sender.tag)]
+            }
+        }
     }
 }
 
-final class EventForwarderViewTestView: UIView, EventSendingProvider {
+final class EventForwarderViewTestView: UIView, EventForwardingProvider {
     let view = UIView()
 
-    var eventForwarder: EventSendable {
-        EventForwarderGroup<TestAction>([
-            EventForwarder(sender: view, mappings: [
-                .gesture(.init(kind: .tap)): { return [TestAction.viewTapped] },
-                .gesture(.init(kind: .pinch)): { return [TestAction.viewPinched] }
-            ])
-        ])
+    var eventForwarder: EventForwardable {
+        EventForwarder(view) { _, ctx in
+            ctx.tapGesture() { [TestAction.viewTapped] }
+            ctx.pinchGesture { [TestAction.viewPinched] }
+        }
     }
 }
 
-extension EventSendableTests {
+extension EventForwardableTests {
     func test_button_addTarget_wired() {
         DispatchQueue.main.async {
             let provider = EventForwarderButtonTestView()
@@ -117,7 +98,6 @@ extension EventSendableTests {
         }
     }
 }
-
 #endif
 
 enum TestAction {

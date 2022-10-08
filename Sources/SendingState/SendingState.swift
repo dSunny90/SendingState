@@ -41,7 +41,7 @@ fileprivate typealias ActionHandlerBlock =
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
-extension SendingState where Base: UIView & EventSendingProvider {
+extension SendingState where Base: UIView & EventForwardingProvider {
     // MARK: - Add
 
     /// Registers the typed action handler so it receives events forwarded
@@ -368,6 +368,12 @@ extension SendingState where Base: Configurable {
             guard let base = base,
                   let input = state as? Base.Input else { return }
             base.configurer(base, input)
+        }
+        if let forwarder = base as? EventForwardingProvider {
+            observer.senderProvider = { [weak forwarder] in
+                (forwarder?.eventForwarder.allSenders ?? [])
+                    .compactMap { $0 as? NSObject }
+            }
         }
         object.stateObserver = observer
         return observer
