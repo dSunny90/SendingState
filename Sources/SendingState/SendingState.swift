@@ -28,6 +28,8 @@ extension SendingState where Base: Configurable {
     /// ``StateObserver`` is lazily created and attached. The observer:
     /// 1. Stores the input as the current state
     /// 2. Calls the base's `configurer` to update the UI
+    /// 3. Propagates the state to all senders if the base conforms to
+    ///    ``EventForwardingProvider``
     ///
     /// For non-`NSObject` bases, falls back to direct `configurer` invocation.
     public func configure<T>(_ input: T) where T == Base.Input {
@@ -51,6 +53,12 @@ extension SendingState where Base: Configurable {
             else { return }
             base.configurer(base, input)
         }
+        if let forwarder = base as? EventForwardingProvider {
+            observer.senderProvider = { [weak forwarder] in
+                (forwarder?.eventForwarder.allSenders ?? [])
+                    .compactMap { $0 as? NSObject }
+            }
+        }
         object.stateObserver = observer
         return observer
     }
@@ -68,7 +76,7 @@ extension SendingStateHost {
 }
 
 /// A closure factory that, given a sender–event pair from an
-/// ``EventSendable`` mapping, returns a handler closure to be
+/// ``EventForwardable`` mapping, returns a handler closure to be
 /// invoked when that event fires.
 fileprivate typealias ActionHandlerBlock =
     (_ sender: AnyObject, _ event: SenderEvent) -> (_ sender: AnyObject) -> Void
@@ -77,11 +85,11 @@ fileprivate typealias ActionHandlerBlock =
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
-extension SendingState where Base: UIView & EventSendingProvider {
+extension SendingState where Base: UIView & EventForwardingProvider {
     // MARK: - Add
 
     /// Registers the typed action handler so it receives events forwarded
-    /// by this view's ``EventSendable`` mappings.
+    /// by this view's ``EventForwardable`` mappings.
     ///
     /// The handler is identified by its `ObjectIdentifier`, so adding the
     /// same instance again is a no-op (idempotent).
@@ -105,7 +113,7 @@ extension SendingState where Base: UIView & EventSendingProvider {
     }
 
     /// Registers the type-erased action handler so it receives events
-    /// forwarded by this view's ``EventSendable`` mappings.
+    /// forwarded by this view's ``EventForwardable`` mappings.
     ///
     /// The handler is identified by its `ObjectIdentifier`, so adding the
     /// same instance again is a no-op (idempotent).
