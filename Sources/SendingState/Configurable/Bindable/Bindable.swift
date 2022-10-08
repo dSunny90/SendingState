@@ -42,6 +42,7 @@ public extension Bindable {
     ///
     /// Preserves binding behavior while hiding the concrete type.
     /// - Returns: A type-erased wrapper.
+    @inlinable
     func eraseToAnyBindable() -> AnyBindable { AnyBindable(self) }
 }
 
@@ -49,6 +50,14 @@ public extension Bindable {
 import UIKit
 
 public extension Bindable where Binder: UIView {
+    /// Applies `contentData` to a `UIView` binder via the observer pathway.
+    ///
+    /// This overload is preferred over the base `apply(to:)` when the binder
+    /// is a `UIView`. It routes through ``SendingState/configure(_:)`` which:
+    /// 1. Stores the input as the binder's state
+    /// 2. Calls the binder's `configurer` to update the UI
+    /// 3. Propagates the state to all senders if the binder conforms to
+    ///    ``EventForwardingProvider``
     func apply(to binder: Binder) {
         guard let input = contentData else { return }
         binder.ss.configure(input)

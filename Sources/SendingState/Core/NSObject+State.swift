@@ -59,6 +59,15 @@ extension SendingState where Base: NSObject {
     ///
     /// Returns `nil` if no state has been stored or if the stored
     /// value's type does not match `T`.
+    ///
+    /// ### Example:
+    /// ```swift
+    /// // Inside an EventForwarder closure:
+    /// let model: MyModel? = sender.ss.state()
+    ///
+    /// // Inside a selector-based handler:
+    /// let model: MyModel? = self.ss.state()
+    /// ```
     @inlinable
     public func state<T>() -> T? {
         base.boundState as? T
