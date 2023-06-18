@@ -1,16 +1,30 @@
 //
-//  AnyBindable.swift
+//  AnyBoundableObject.swift
 //  SendingState
 //
 //  Created by SunSoo Jeon on 20.02.2021.
 //
 
+// MARK: - History
+// - Jun 2023: Renamed `AnyBindableObject` to `AnyBoundableObject`.
+//
+//   This follows the `Bindable` -> `Boundable` rename to avoid confusion with
+//   SwiftUI’s `@Bindable` introduced at WWDC 23. The type-erased wrapper keeps
+//   the same role, but now matches the updated naming in the binding API.
+
 import Foundation
 
-/// A type-erased `Bindable` wrapper.
+/// A class-based, type-erased `Boundable` wrapper.
 ///
-/// Enables storage of heterogeneous `Bindable` types in collections.
-public struct AnyBindable: Hashable {
+/// Subclass this type to build specialized wrappers while preserving
+/// reference semantics.
+///
+/// Use this when you need to store heterogeneous `Boundable` values in
+/// collections, or when identity and stable references matter
+/// (e.g. diffing, caching, or shared ownership across layers).
+///
+/// - Note: For value semantics, use `AnyBoundable` instead.
+open class AnyBoundableObject: Hashable {
     @usableFromInline
     internal let uuid: UUID = UUID()
 
@@ -29,22 +43,22 @@ public struct AnyBindable: Hashable {
     private let _sizeBlock: ((CGSize?) -> CGSize?)?
     private let _identifier: () -> String?
 
-    /// Creates a type-erased wrapper from a concrete `Bindable`.
+    /// Creates a type-erased wrapper from a concrete `Boundable`.
     ///
-    /// - Parameter bindable: The concrete `Bindable` to wrap.
-    public init<T: Bindable>(_ bindable: T) {
-        _contentData = { bindable.contentData }
+    /// - Parameter boundable: The concrete `Boundable` to wrap.
+    public init<T: Boundable>(_ boundable: T) {
+        _contentData = { boundable.contentData }
         _binderType = T.Binder.self
         _bindingBlock = { anyBinder in
             guard let concreteBinder = anyBinder as? T.Binder,
-                  let input = bindable.contentData else { return }
+                  let input = boundable.contentData else { return }
             SendingState<T.Binder>(concreteBinder).configure(input)
         }
         _sizeBlock = { size in
-            guard let input = bindable.contentData else { return nil }
+            guard let input = boundable.contentData else { return nil }
             return T.Binder.size(with: input, constrainedTo: size)
         }
-        _identifier = { bindable.identifier }
+        _identifier = { boundable.identifier }
     }
 
     /// Applies the configuration to the given binder.
@@ -71,7 +85,7 @@ public struct AnyBindable: Hashable {
     }
 
     @inlinable
-    public static func == (lhs: AnyBindable, rhs: AnyBindable) -> Bool {
+    public static func == (lhs: AnyBoundableObject, rhs: AnyBoundableObject) -> Bool {
         return lhs.uuid == rhs.uuid
     }
 }
