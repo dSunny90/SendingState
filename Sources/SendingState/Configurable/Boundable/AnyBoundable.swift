@@ -1,5 +1,5 @@
 //
-//  AnyBindable.swift
+//  AnyBoundable.swift
 //  SendingState
 //
 //  Created by SunSoo Jeon on 20.02.2021.
@@ -7,17 +7,17 @@
 
 import Foundation
 
-/// A fully type-erased `Bindable` instance.
+/// A fully type-erased `Boundable` instance.
 ///
-/// Enables storage of heterogeneous `Bindable` types in collections.
-public struct AnyBindable: Hashable {
+/// Enables storage of heterogeneous `Boundable` types in collections.
+public struct AnyBoundable: Hashable {
     /// The underlying content data, type-erased as `Any`.
     public var contentData: Any? { _contentData() }
 
     /// The expected binder type to which configuration should be applied.
     public var binderType: Any.Type { _binderType }
 
-    /// An optional identifier used to distinguish this bindable instance.
+    /// An optional identifier used to distinguish this boundable instance.
     public var identifier: String? { _identifier() }
 
     internal let uuid: UUID = UUID()
@@ -30,29 +30,29 @@ public struct AnyBindable: Hashable {
 
     private let _identifier: () -> String?
 
-    /// Creates a type-erased bindable from a concrete `Bindable`.
+    /// Creates a type-erased boundable from a concrete `Boundable`.
     ///
-    /// - Parameter bindable: The concrete `Bindable` to wrap.
-    public init<T: Bindable>(_ bindable: T) {
-        _contentData = { bindable.contentData }
+    /// - Parameter boundable: The concrete `Boundable` to wrap.
+    public init<T: Boundable>(_ boundable: T) {
+        _contentData = { boundable.contentData }
         _binderType = T.Binder.self
         _bindingBlock = { anyBinder in
             guard let concreteBinder = anyBinder as? T.Binder,
-                  let input = bindable.contentData
+                  let input = boundable.contentData
             else { return }
             concreteBinder.configurer(concreteBinder, input)
         }
         _sizeBlock = { size in
-            guard let input = bindable.contentData else { return .zero }
+            guard let input = boundable.contentData else { return .zero }
             return T.Binder.size(with: input, constrainedTo: size) ?? .zero
         }
-        _identifier = { bindable.identifier }
+        _identifier = { boundable.identifier }
     }
 
     /// Applies the configuration to the given binder instance.
     ///
     /// - Parameter binder: An instance that should match `binderType`.
-    public func bind(to binder: Any) {
+    public func bound(to binder: Any) {
         _bindingBlock(binder)
     }
 
@@ -65,7 +65,7 @@ public struct AnyBindable: Hashable {
         hasher.combine(uuid)
     }
 
-    public static func == (lhs: AnyBindable, rhs: AnyBindable) -> Bool {
+    public static func == (lhs: AnyBoundable, rhs: AnyBoundable) -> Bool {
         return lhs.uuid == rhs.uuid
     }
 }

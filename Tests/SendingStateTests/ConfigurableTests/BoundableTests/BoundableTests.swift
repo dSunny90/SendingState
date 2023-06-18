@@ -1,5 +1,5 @@
 //
-//  BindableTests.swift
+//  BoundableTests.swift
 //  SendingState
 //
 //  Created by SunSoo Jeon on 01.02.2021.
@@ -15,7 +15,7 @@ final class TestObject: Configurable {
     }
 }
 
-struct TestModel: Bindable {
+struct TestModel: Boundable {
     typealias DataType = String
     typealias Binder = TestObject
 
@@ -23,40 +23,40 @@ struct TestModel: Bindable {
     var binderType: TestObject.Type { TestObject.self }
 }
 
-final class BindableTests: XCTestCase {
-    func testBindableConfiguresBinderCorrectly() {
+final class BoundableTests: XCTestCase {
+    func testBoundableConfiguresBinderCorrectly() {
         let model = TestModel(contentData: "Hello")
         let obj = TestObject()
 
-        model.bind(to: obj)
+        model.bound(to: obj)
 
         XCTAssertEqual(obj.inputValue, "Hello")
     }
 
-    func testAnyBindableConfiguresBinderCorrectly() {
+    func testAnyBoundableConfiguresBinderCorrectly() {
         let model = TestModel(contentData: "Hello")
-        let erased = AnyBindable(model)
+        let erased = AnyBoundable(model)
         let obj = TestObject()
 
-        erased.bind(to: obj)
+        erased.bound(to: obj)
 
         XCTAssertEqual(obj.inputValue, "Hello")
     }
 
-    func testAnyBindableDoesNotCrashOnInvalidBinder() {
+    func testAnyBoundableDoesNotCrashOnInvalidBinder() {
         let model = TestModel(contentData: "Hello")
-        let erased = AnyBindable(model)
+        let erased = AnyBoundable(model)
 
         // Pass unrelated type as binder – should be no crash or side effect
         class Dummy {}
 
         let dummy = Dummy()
-        XCTAssertNoThrow(erased.bind(to: dummy))
+        XCTAssertNoThrow(erased.bound(to: dummy))
     }
 
-    func testBindableThreadSafetyUnderLoad() {
+    func testBoundableThreadSafetyUnderLoad() {
         let model = TestModel(contentData: "ThreadSafe")
-        let erased = AnyBindable(model)
+        let erased = AnyBoundable(model)
         let expectation = XCTestExpectation(description: "Thread safety check")
 
         let obj = TestObject()
@@ -66,7 +66,7 @@ final class BindableTests: XCTestCase {
         for _ in 0..<1000 {
             group.enter()
             queue.async {
-                erased.bind(to: obj)
+                erased.bound(to: obj)
                 group.leave()
             }
         }
