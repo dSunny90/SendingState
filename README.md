@@ -10,7 +10,7 @@
 
 It consists of two main flows:
 
-- **🟢 Inbound (Configurable + Bindable)**  
+- **🟢 Inbound (Configurable + Boundable)**  
   A component receives a model to configure itself and can optionally be bound to a view model for continuous updates.  
   Once configured, it may **remain bound** to dynamic view model state.  
 
@@ -164,7 +164,7 @@ class MyViewController: UIViewController {
 ```swift
 class MyViewController: UIViewController {
     func bindViewModel(with viewModel: MyViewModel) {
-        viewModel.bind(to: myView)
+        viewModel.bound(to: myView)
     }
 }
 ```
@@ -188,14 +188,14 @@ Let the code guide you — just follow me.
 The data flows in one direction only — from model to view.
 No need to capture self or worry about memory leaks — all closures are safely handled.
 
-### Bindable:
+### Boundable:
 
-1. After adopting Configurable, conform your view to Bindable.
+1. After adopting Configurable, conform your view to Boundable.
 2. Implement the binding logic so your ViewModel can update the view reactively.
-3. Use `viewModel.bind(to: view)` to connect the two.
+3. Use `viewModel.bound(to: view)` to connect the two.
 
 Want to drive a collection of views from an array of data?
-Use AnyBindable to erase the types and bind them in a loop — no type gymnastics, just clean bindings.
+Use AnyBoundable to erase the types and bind them in a loop — no type gymnastics, just clean bindings.
 
 ### EventForwarder:
 

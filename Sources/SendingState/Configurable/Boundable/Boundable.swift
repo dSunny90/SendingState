@@ -1,5 +1,5 @@
 //
-//  Bindable.swift
+//  Boundable.swift
 //  SendingState
 //
 //  Created by SunSoo Jeon on 01.02.2021.
@@ -9,7 +9,7 @@
 ///
 /// Maps a data model (`DataType`) to a UI component (`Binder`) that renders it.
 /// `Binder` must conform to `Configurable`.
-public protocol Bindable {
+public protocol Boundable {
     /// The type of data to bind to the UI component.
     associatedtype DataType
     /// The UI type that renders the data.
@@ -20,14 +20,14 @@ public protocol Bindable {
     /// The view type used to render the data.
     var binderType: Binder.Type { get }
 
-    /// Optional identifier to distinguish between bindables
+    /// Optional identifier to distinguish between boundables
     var identifier: String? { get }
 }
 
-public extension Bindable {
+public extension Boundable {
     var identifier: String? { nil }
 
-    func bind(to binder: Binder) {
+    func bound(to binder: Binder) {
         guard let input = contentData else { return }
         binder.configurer(binder, input)
     }
@@ -36,5 +36,5 @@ public extension Bindable {
     ///
     /// Keeps binding behavior while hiding the type.
     /// - Returns: A type-erased wrapper.
-    func eraseToAnyBindable() -> AnyBindable { AnyBindable(self) }
+    func eraseToAnyBoundable() -> AnyBoundable { AnyBoundable(self) }
 }
