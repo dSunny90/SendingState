@@ -1,5 +1,5 @@
 //
-//  BindableTests.swift
+//  BoundableTests.swift
 //  SendingState
 //
 //  Created by SunSoo Jeon on 01.02.2021.
@@ -8,8 +8,8 @@
 import XCTest
 @testable import SendingState
 
-final class BindableTests: XCTestCase {
-    func testBindableConfiguresBinderCorrectly() {
+final class BoundableTests: XCTestCase {
+    func testBoundableConfiguresBinderCorrectly() {
         let model = TestModel(contentData: "Hello")
         let obj = TestObject()
 
@@ -18,9 +18,9 @@ final class BindableTests: XCTestCase {
         XCTAssertEqual(obj.inputValue, "Hello")
     }
 
-    func testAnyBindableConfiguresBinderCorrectly() {
+    func testAnyBoundableConfiguresBinderCorrectly() {
         let model = TestModel(contentData: "World")
-        let erased = AnyBindable(model)
+        let erased = AnyBoundable(model)
         let obj = TestObject()
 
         erased.apply(to: obj)
@@ -28,9 +28,9 @@ final class BindableTests: XCTestCase {
         XCTAssertEqual(obj.inputValue, "World")
     }
 
-    func testAnyBindableDoesNotCrashOnInvalidBinder() {
+    func testAnyBoundableDoesNotCrashOnInvalidBinder() {
         let model = TestModel(contentData: "Hello, World!")
-        let erased = AnyBindable(model)
+        let erased = AnyBoundable(model)
 
         // Pass unrelated type as binder – should be no crash or side effect
         class Dummy {}
@@ -39,9 +39,9 @@ final class BindableTests: XCTestCase {
         XCTAssertNoThrow(erased.apply(to: dummy))
     }
 
-    func testBindableThreadSafetyUnderLoad() {
+    func testBoundableThreadSafetyUnderLoad() {
         let model = TestModel(contentData: "ThreadSafe")
-        let erased = AnyBindable(model)
+        let erased = AnyBoundable(model)
         let expectation = XCTestExpectation(description: "Thread safety check")
 
         let obj = TestObject()
@@ -65,7 +65,7 @@ final class BindableTests: XCTestCase {
     }
 }
 
-extension BindableTests {
+extension BoundableTests {
     final class TestObject: Configurable {
         var inputValue: String?
         var configurer: (TestObject, String) -> Void = { obj, input in
@@ -73,7 +73,7 @@ extension BindableTests {
         }
     }
 
-    struct TestModel: Bindable {
+    struct TestModel: Boundable {
         typealias DataType = String
         typealias Binder = TestObject
 

@@ -11,7 +11,7 @@
 - **Configurable**  
   Components receive models for configuration.
 
-- **Bindable**  
+- **Boundable**  
   View models deliver state snapshots to views through one-way binding.
   
 - **EventForwarder**  
@@ -190,13 +190,13 @@ class MyViewController: UIViewController {
 The data flows in one direction only — from model to view.
 No need to capture self or worry about memory leaks — all closures are safely handled.
 
-### Bindable:
+### Boundable:
 
-1. After adopting `Configurable`, conform your view model to `Bindable`
+1. After adopting `Configurable`, conform your view model to `Boundable`
 2. Implement the binding logic so your view model can deliver state to the view
 3. Use `viewModel.apply(to: view)` to apply the state
 
-For collections of views driven by arrays of data, use `AnyBindable` to erase types and bind them in a loop — no type gymnastics required.
+For collections of views driven by arrays of data, use `AnyBoundable` to erase types and bind them in a loop — no type gymnastics required.
 
 ### EventForwardable:
 
@@ -315,6 +315,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "0.4.0")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "0.5.0")
 ]
 ```
