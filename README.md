@@ -15,6 +15,9 @@
 - **EventForwarder**  
   User interactions are forwarded as declarative actions. Action closures can access the bound state directly — no manual state passing needed.
 
+- **ServerStateSectionRepresentable**
+  Server-provided sections and units describe the screen structure for server-driven UI rendering.
+
 ---
 
 When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly, reacting to user events with @IBAction, and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
@@ -289,6 +292,17 @@ ctx.control(.touchUpInside) { (state: MyModel) in
 
 This also works with gesture mappings: `tapGesture`, `longPressGesture`, `swipeGesture`, `panGesture`, `pinchGesture`, `rotationGesture`, `screenEdgeGesture`, and `hoverGesture`.
 
+### Server-driven State:
+
+Use `ServerStateSectionRepresentable` and `ServerStateUnitRepresentable` when your screen structure is delivered from the server.
+
+1. Adopt `ServerStateSectionRepresentable` for each server-defined section
+2. Adopt `ServerStateUnitRepresentable` for each renderable UI unit
+3. Map `unitType` to the view or cell that should render the unit
+4. Use `unitData` as the payload for configuring the rendered view
+
+This allows the server to control which UI modules appear on the screen, while the client keeps the rendering logic type-safe and reusable.
+
 ---
 
 ## Installation
@@ -308,6 +322,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "0.2.0")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "0.2.1")
 ]
 ```
