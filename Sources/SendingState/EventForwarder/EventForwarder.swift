@@ -22,6 +22,7 @@
 /// to the actions forwarded when those events occur.
 ///
 /// Use `EventForwarder` to define event behavior for a specific sender.
+@MainActor
 public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     /// The sender associated with this forwarder.
     @usableFromInline
@@ -80,7 +81,7 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
 ///     ctx.gesture(.doubleTapDidEnd) { [Action.doubleTap] }
 /// }
 /// ```
-@resultBuilder public enum SenderEventMappingBuilder<Action> {
+@MainActor @resultBuilder public enum SenderEventMappingBuilder<Action> {
     /// Combines multiple event-to-action mappings into a single dictionary.
     ///
     /// Typically not called directly. Instead, define multiple mappings

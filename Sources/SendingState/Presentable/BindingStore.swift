@@ -20,7 +20,7 @@ import Foundation
 /// This makes `BindingStore` suitable when the UI should be able to mutate the
 /// currently bound state and the parent model must stay in sync.
 public final class BindingStore<State, Binder: NSObject & Configurable>
-    : Presentable where Binder.Input == State
+    : Presentable, @unchecked Sendable where Binder.Input == State
 {
     /// A closure type used to observe store updates.
     public typealias Observer = (State) -> Void
@@ -74,6 +74,7 @@ public final class BindingStore<State, Binder: NSObject & Configurable>
     /// `invalidateState` updates `state` automatically.
     ///
     /// - Parameter binder: The binder to configure.
+    @MainActor
     public func apply(to binder: Binder) {
         // Cancel previously attached store observation (if any) on this binder
         binder._ss_storeObservationToken?.cancel()

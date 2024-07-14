@@ -15,7 +15,7 @@ import Foundation
 /// create retain cycles without explicit cleanup.
 ///
 /// Uses `NSLock` internally for thread safety.
-internal final class SwiftPointerPool {
+internal final class SwiftPointerPool: @unchecked Sendable {
     /// Internal storage for retained objects conforming to `AutoReleasable`.
     private var items = [AutoReleasable]()
     private let lock = NSLock()

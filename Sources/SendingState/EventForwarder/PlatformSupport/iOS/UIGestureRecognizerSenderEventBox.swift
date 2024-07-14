@@ -57,20 +57,12 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>: 
     }
 
     override func cleanup() {
-        let detach = {
-            guard let recognizer = self.recognizer else { return }
-            recognizer.view?.removeGestureRecognizer(recognizer)
-            recognizer.removeTarget(
-                self, action: #selector(self.invoke(_:))
-            )
-            self.recognizer = nil
-        }
+        guard let recognizer = self.recognizer else { super.cleanup(); return; }
 
-        if Thread.isMainThread {
-            detach()
-        } else {
-            DispatchQueue.main.async(execute: detach)
-        }
+        recognizer.view?.removeGestureRecognizer(recognizer)
+        recognizer.removeTarget(self, action: #selector(self.invoke(_:)))
+        self.recognizer = nil
+
         super.cleanup()
     }
 }
