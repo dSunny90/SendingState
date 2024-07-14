@@ -12,7 +12,9 @@ import UIKit
 ///
 /// Retained by a memory pool and releases resources during cleanup
 /// to prevent retain cycles.
-internal final class UIControlSenderEventBox: SenderEventBox<UIControl> {
+internal final class UIControlSenderEventBox
+    : SenderEventBox<UIControl>, @unchecked Sendable
+{
     /// Weak reference to the control to prevent retain cycles.
     private weak var control: UIControl?
 
@@ -25,6 +27,7 @@ internal final class UIControlSenderEventBox: SenderEventBox<UIControl> {
     ///   - control: The UIControl to attach the action to.
     ///   - events: The UIControl event to handle (e.g., `.touchUpInside`).
     ///   - actionHandler: The closure invoked when the event occurs.
+    @MainActor
     @inlinable
     internal init(
         control: UIControl,
@@ -34,15 +37,7 @@ internal final class UIControlSenderEventBox: SenderEventBox<UIControl> {
         self.control = control
         self.event = events
         super.init(actionHandler)
-        if Thread.isMainThread {
-            control.addTarget(self, action: #selector(invoke(_:)), for: event)
-        } else {
-            DispatchQueue.main.async {
-                self.control?.addTarget(
-                    self, action: #selector(self.invoke(_:)), for: self.event
-                )
-            }
-        }
+        control.addTarget(self, action: #selector(invoke(_:)), for: event)
     }
 
     override func cleanup() {

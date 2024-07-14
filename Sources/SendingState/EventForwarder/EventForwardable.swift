@@ -44,6 +44,7 @@
 /// Use `SenderGroup` to build event forwarders rather than implementing
 /// `EventForwardable` directly. `SenderGroup` aggregates multiple
 /// event forwarders into a unified collection.
+@MainActor
 public protocol EventForwardable {
     /// All registered sender-event-action mappings managed by this forwarder.
     ///

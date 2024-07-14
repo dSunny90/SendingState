@@ -20,6 +20,7 @@
 ///
 /// This separates UI concerns from business logic: views declare events,
 /// while handlers process the corresponding actions.
+@MainActor
 public protocol EventForwardingProvider: AnyObject {
     /// The event forwarder that defines event-to-action mappings.
     var eventForwarder: EventForwardable { get }

@@ -9,8 +9,8 @@ import Foundation
 
 extension NSObject {
     private struct AssociatedKeys {
-        static var boundState: UInt8 = 0
-        static var stateObserver: UInt8 = 0
+        nonisolated(unsafe) static var boundState: UInt8 = 0
+        nonisolated(unsafe) static var stateObserver: UInt8 = 0
     }
 
     /// A bound state slot stored as an associated object.
@@ -37,6 +37,7 @@ extension NSObject {
     /// The state observer attached to this object.
     ///
     /// Created and attached by `SendingState.configure(_:)` on first use.
+    @MainActor
     internal var stateObserver: StateObserver? {
         get {
             objc_getAssociatedObject(
@@ -74,6 +75,7 @@ extension SendingState where Base: NSObject {
     }
 
     /// Removes the stored state from the base object and its observer.
+    @MainActor
     public func removeState() {
         base.boundState = nil
         base.stateObserver?.state = nil

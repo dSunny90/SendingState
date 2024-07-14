@@ -32,21 +32,16 @@ internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
     /// Invokes the stored closure with the sender.
     ///
     /// - Parameter sender: The object that triggered the event.
+    @MainActor
     @objc internal func invoke(_ sender: Any) {
         guard let sender = sender as? Sender else { return }
-        if Thread.isMainThread {
-            box?(sender)
-        } else {
-            DispatchQueue.main.async {
-                self.box?(sender)
-            }
-        }
+        box?(sender)
     }
 
     /// Clears the stored closure to prevent retain cycles.
     ///
     /// Typically invoked by `SwiftPointerPool` during cleanup.
-    internal func cleanup() {
+    nonisolated internal func cleanup() {
         box = nil
     }
 }

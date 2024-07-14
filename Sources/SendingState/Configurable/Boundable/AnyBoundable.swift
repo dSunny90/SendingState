@@ -17,7 +17,7 @@ import Foundation
 /// A type-erased `Boundable` wrapper.
 ///
 /// Enables storage of heterogeneous `Boundable` types in collections.
-public struct AnyBoundable: Hashable {
+public struct AnyBoundable: Hashable, @unchecked Sendable {
     /// The underlying content data, type-erased to `Any`.
     public var contentData: Any? { _contentData() }
 
@@ -33,7 +33,7 @@ public struct AnyBoundable: Hashable {
     private let _contentData: () -> Any?
     private let _binderType: Any.Type
 
-    private let _bindingBlock: (Any) -> Void
+    private let _bindingBlock: @MainActor (Any) -> Void
     private let _sizeBlock: ((CGSize?) -> CGSize?)?
 
     private let _identifier: () -> String?
@@ -58,7 +58,11 @@ public struct AnyBoundable: Hashable {
 
     /// Applies the configuration to the given binder.
     ///
+    /// Must be called on the main actor because `Configurable` is
+    /// `@MainActor`-isolated.
+    ///
     /// - Parameter binder: A binder instance matching `binderType`.
+    @MainActor
     public func apply(to binder: Any) {
         _bindingBlock(binder)
     }

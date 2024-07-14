@@ -16,6 +16,7 @@ import Foundation
 ///
 /// Attached to a binder (e.g., a `UIView`) as an associated object.
 /// Uses weak references to the binder to prevent retain cycles.
+@MainActor
 internal final class StateObserver {
     /// Weak reference to the binder that owns this observer.
     weak var binder: NSObject?
