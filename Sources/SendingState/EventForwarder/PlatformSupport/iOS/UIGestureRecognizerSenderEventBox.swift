@@ -12,12 +12,14 @@ import UIKit
 ///
 /// Retained by a memory pool and releases resources during cleanup
 /// to prevent retain cycles.
-internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>: SenderEventBox<T> {
+internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
+    : SenderEventBox<T>, @unchecked Sendable
+{
     /// Weak reference to the gesture recognizer to prevent retain cycles.
     private weak var recognizer: UIGestureRecognizer?
 
     /// Gesture states that trigger the handler (e.g., `.recognized`).
-    private var allowedStates: Set<UIGestureRecognizer.State> = []
+    private let allowedStates: Set<UIGestureRecognizer.State>
 
     /// Initializes the box and registers the gesture recognizer.
     ///
@@ -25,6 +27,7 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>: 
     ///   - recognizer: The gesture recognizer to observe.
     ///   - states: Gesture states that trigger the action (default: `.recognized`).
     ///   - actionHandler: The closure invoked when the gesture occurs.
+    @MainActor
     @inlinable
     internal init(
         recognizer: T,
@@ -34,26 +37,15 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>: 
         self.allowedStates = states
         self.recognizer = recognizer
         super.init(actionHandler)
-        if Thread.isMainThread {
-            recognizer.addTarget(self, action: #selector(invoke(_:)))
-        } else {
-            DispatchQueue.main.async {
-                self.recognizer?.addTarget(self, action: #selector(self.invoke(_:)))
-            }
-        }
+        recognizer.addTarget(self, action: #selector(invoke(_:)))
     }
 
+    @MainActor
     @objc override func invoke(_ sender: Any) {
         guard let recognizer = sender as? T else { return }
         guard allowedStates.isEmpty || allowedStates.contains(recognizer.state)
         else { return }
-        if Thread.isMainThread {
-            box?(recognizer)
-        } else {
-            DispatchQueue.main.async {
-                self.box?(recognizer)
-            }
-        }
+        box?(recognizer)
     }
 
     override func cleanup() {

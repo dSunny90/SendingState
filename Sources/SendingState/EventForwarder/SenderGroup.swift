@@ -17,6 +17,7 @@
 ///
 /// Use `SenderGroup` to combine event forwarders for unified action lookup.
 /// Flattens the results of all contained forwarders when resolving actions.
+@MainActor
 public struct SenderGroup: EventForwardable {
     /// The collection of event forwarders contained in this group.
     private let forwarders: [EventForwardable]
@@ -63,7 +64,7 @@ public struct SenderGroup: EventForwardable {
 ///     MyCustomEventForwarder()
 /// }
 /// ```
-@resultBuilder public enum EventForwarderBuilder {
+@MainActor @resultBuilder public enum EventForwarderBuilder {
     /// Combines multiple event forwarders into an array.
     ///
     /// Typically not called directly. Instead, declare multiple forwarders

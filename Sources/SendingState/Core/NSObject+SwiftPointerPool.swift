@@ -14,7 +14,7 @@ import Foundation
 /// host object is deallocated.
 extension NSObject {
     private struct AssociatedKeys {
-        static var pool: UInt8 = 0
+        nonisolated(unsafe) static var pool: UInt8 = 0
     }
 
     /// The associated pointer pool for this instance.

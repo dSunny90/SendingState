@@ -24,7 +24,7 @@ import Foundation
 /// (e.g. diffing, caching, or shared ownership across layers).
 ///
 /// - Note: For value semantics, use `AnyBoundable` instead.
-open class AnyBoundableObject: Hashable {
+open class AnyBoundableObject: Hashable, @unchecked Sendable {
     @usableFromInline
     internal let uuid: UUID = UUID()
 
@@ -39,7 +39,7 @@ open class AnyBoundableObject: Hashable {
 
     private let _contentData: () -> Any?
     private let _binderType: Any.Type
-    private let _bindingBlock: (Any) -> Void
+    private let _bindingBlock: @MainActor (Any) -> Void
     private let _sizeBlock: ((CGSize?) -> CGSize?)?
     private let _identifier: () -> String?
 
@@ -63,7 +63,11 @@ open class AnyBoundableObject: Hashable {
 
     /// Applies the configuration to the given binder.
     ///
+    /// Must be called on the main actor because `Configurable` is
+    /// `@MainActor`-isolated.
+    ///
     /// - Parameter binder: A binder instance matching `binderType`.
+    @MainActor
     public func apply(to binder: Any) {
         _bindingBlock(binder)
     }
