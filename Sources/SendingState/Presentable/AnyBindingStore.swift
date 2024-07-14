@@ -34,7 +34,7 @@ open class AnyBindingStore {
 
     private let _getStateBlock: () -> Any
     private let _setStateBlock: (Any) -> Void
-    private let _applyBlock: (Any) -> Void
+    private let _applyBlock: @MainActor (Any) -> Void
     private let _observeBlock: (@escaping (Any) -> Void) -> StateObservationToken
     private let _sizeBlock: (CGSize?) -> CGSize?
     private let _decodeStateBlock: (Data, JSONDecoder) throws -> Any
@@ -92,6 +92,7 @@ open class AnyBindingStore {
     ///
     /// - Parameter binder: A binder expected to match the wrapped
     ///                     store's binder type.
+    @MainActor
     public func apply(to binder: Any) {
         _applyBlock(binder)
     }

@@ -18,6 +18,7 @@ final class BindingStoreTests: XCTestCase {
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
+@MainActor
 extension BindingStoreTests {
     final class TestBinder: UIView, Configurable {
         typealias Input = Model

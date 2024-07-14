@@ -50,6 +50,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     /// same instance again is a no-op (idempotent).
     ///
     /// - Parameter provider: The handler to register.
+    @MainActor
     public func addActionHandler<Provider: ActionHandlingProvider>(
         to provider: Provider
     ) {
@@ -74,6 +75,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     /// same instance again is a no-op (idempotent).
     ///
     /// - Parameter provider: The type-erased handler to register.
+    @MainActor
     public func addAnyActionHandler(to provider: AnyActionHandlingProvider) {
         let ownerID = ObjectIdentifier(provider)
         addEventHandlers(owner: ownerID) { sender, event in
@@ -95,6 +97,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     /// event bindings that were created by ``addActionHandler(to:)``.
     ///
     /// - Parameter provider: The handler to remove.
+    @MainActor
     public func removeActionHandler<Provider: ActionHandlingProvider>(
         from provider: Provider
     ) {
@@ -106,6 +109,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     /// all event bindings that were created by ``addAnyActionHandler(to:)``.
     ///
     /// - Parameter provider: The type-erased handler to remove.
+    @MainActor
     public func removeAnyActionHandler(from provider: AnyActionHandlingProvider) {
         let ownerID = ObjectIdentifier(provider)
         removeEventHandlers(owner: ownerID)
@@ -113,6 +117,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
 
     /// Removes **all** action handlers from this view and its senders,
     /// regardless of owner.
+    @MainActor
     public func removeAllActionHandlers() {
         for (sender, _, _) in base.eventForwarder.allMappings {
             (sender as? NSObject)?.cleanupPointerPool()
@@ -126,6 +131,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     /// typed handler as the sole receiver of this view's forwarded events.
     ///
     /// - Parameter provider: The handler to assign.
+    @MainActor
     public func assignActionHandler<Provider: ActionHandlingProvider>(
         to provider: Provider
     ) {
@@ -138,6 +144,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     /// events.
     ///
     /// - Parameter provider: The type-erased handler to assign.
+    @MainActor
     public func assignAnyActionHandler(to provider: AnyActionHandlingProvider) {
         removeAllActionHandlers()
         addAnyActionHandler(to: provider)
@@ -159,6 +166,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     ///     allowing batch removal later via ``removeEventHandlers(owner:)``.
     ///   - handlerBlock: A factory that produces a handler closure for a
     ///     given sender–event pair.
+    @MainActor
     private func addEventHandlers(
         owner: ObjectIdentifier,
         using handlerBlock: @escaping ActionHandlerBlock
@@ -187,6 +195,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     ///
     /// - Parameter owner: The identifier whose handler boxes should be
     ///   removed.
+    @MainActor
     private func removeEventHandlers(owner: ObjectIdentifier) {
         for (sender, _, _) in base.eventForwarder.allMappings {
             (sender as? NSObject)?.removeFromPointerPool(owner: owner)
@@ -204,6 +213,7 @@ extension SendingState where Base: UIView {
     ///   - gestureEvent: The gesture descriptor containing kind, states,
     ///     and optional configuration (tap count, touch count, etc.).
     ///   - owner: The owner identifier for the created handler boxes.
+    @MainActor
     fileprivate func addGestureHandler(
         _ handler: @escaping (_ gesture: UIGestureRecognizer) -> Void,
         for gestureEvent: SenderEvent.Gesture,
@@ -278,6 +288,7 @@ extension SendingState where Base: UIView {
     ///   - states: The recognizer states that should trigger the handler.
     ///   - handler: The closure invoked when the gesture fires.
     ///   - owner: The owner identifier for the created handler box.
+    @MainActor
     private func attach<T: UIGestureRecognizer>(
         _ gestureRecognizer: T,
         on states: Set<UIGestureRecognizer.State>,
@@ -288,13 +299,7 @@ extension SendingState where Base: UIView {
         let box = UIGestureRecognizerSenderEventBox<T>(
             recognizer: gestureRecognizer, on: states, actionHandler: handler
         )
-        if Thread.isMainThread {
-            base.addGestureRecognizer(gestureRecognizer)
-        } else {
-            DispatchQueue.main.async {
-                base.addGestureRecognizer(gestureRecognizer)
-            }
-        }
+        base.addGestureRecognizer(gestureRecognizer)
         base.addToPointerPool(box, owner: owner)
     }
 }
@@ -307,6 +312,7 @@ extension SendingState where Base: UIControl {
     ///   - eventRawValue: The raw value of the `UIControl.Event` to observe.
     ///   - handler: The closure invoked when the control event fires.
     ///   - owner: The owner identifier for the created handler box.
+    @MainActor
     fileprivate func addControlEventHandler(
         _ handler: @escaping (_ sender: UIControl) -> Void,
         for eventRawValue: UInt,
@@ -328,6 +334,7 @@ extension SendingState where Base: NSObject {
     ///
     /// - Parameter transform: A closure that returns a new state derived
     ///                        from the current one.
+    @MainActor
     public func invalidateState<T>(_ transform: (T) -> T) {
         guard let current = base.boundState as? T else { return }
         let newValue = transform(current)
@@ -345,6 +352,7 @@ extension SendingState where Base: Configurable {
     /// 2. Calls the base's `configurer` to update the UI
     ///
     /// For non-`NSObject` bases, falls back to direct `configurer` invocation.
+    @MainActor
     public func configure<T>(_ input: T) where T == Base.Input {
         guard let object = base as? NSObject else {
             base.configurer(base, input)
@@ -354,6 +362,7 @@ extension SendingState where Base: Configurable {
         observer.update(input)
     }
 
+    @MainActor
     private func ensureObserver(on object: NSObject) -> StateObserver {
         if let existing = object.stateObserver {
             return existing

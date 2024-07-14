@@ -23,6 +23,7 @@ final class AnyBindingStoreTests: XCTestCase {
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
+@MainActor
 extension AnyBindingStoreTests {
     final class ProductView: UIView, Configurable {
         typealias Input = ProductModel
@@ -80,7 +81,7 @@ extension AnyBindingStoreTests {
         XCTAssertEqual(binder.lastInput, model)
 
         // When
-        binder.ss.invalidateState { state in
+        binder.ss.invalidateState { _ in
             ProductModel(name: "Socks", count: 30)
         }
 

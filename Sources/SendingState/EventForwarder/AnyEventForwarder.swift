@@ -11,6 +11,7 @@
 /// without exposing their concrete types.
 ///
 /// Use when abstracting away specific forwarder types.
+@MainActor
 public struct AnyEventForwarder: EventForwardable {
     /// A closure that resolves actions for a given sender and event.
     private let _actions: (AnyObject, SenderEvent) -> [Any]

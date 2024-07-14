@@ -51,6 +51,7 @@ extension AnyActionHandlingProvider {
     /// would otherwise fail with a protocol composition existential.
     ///
     /// - Parameter view: The view whose events this handler will receive.
+    @MainActor
     public func attach<V: UIView & EventForwardingProvider>(to view: V) {
         view.ss.addAnyActionHandler(to: self)
     }
@@ -62,6 +63,7 @@ extension AnyActionHandlingProvider {
     /// to this handler.
     ///
     /// - Parameter view: The view to stop receiving events from.
+    @MainActor
     public func detach<V: UIView & EventForwardingProvider>(from view: V) {
         view.ss.removeAnyActionHandler(from: self)
     }

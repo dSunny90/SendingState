@@ -46,17 +46,9 @@ internal final class UIControlSenderEventBox: SenderEventBox<UIControl> {
     }
 
     override func cleanup() {
-        let detach = {
-            guard let control = self.control else { return }
-            control.removeTarget(self, action: #selector(self.invoke(_:)), for: self.event)
-            self.control = nil
-        }
+        self.control?.removeTarget(self, action: #selector(self.invoke(_:)), for: self.event)
+        self.control = nil
 
-        if Thread.isMainThread {
-            detach()
-        } else {
-            DispatchQueue.main.async(execute: detach)
-        }
         super.cleanup()
     }
 }

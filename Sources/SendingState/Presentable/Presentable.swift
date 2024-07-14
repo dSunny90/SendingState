@@ -30,5 +30,5 @@ public protocol Presentable {
     /// Applies the current state to the given binder.
     ///
     /// - Parameter binder: A binder that renders `State`.
-    func apply(to binder: Binder)
+    @MainActor func apply(to binder: Binder)
 }
