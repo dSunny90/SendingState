@@ -23,6 +23,7 @@ final class AnyBindingStoreTests: XCTestCase {
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
+@MainActor
 extension AnyBindingStoreTests {
     final class ProductView: UIView, Configurable {
         typealias Input = ProductModel

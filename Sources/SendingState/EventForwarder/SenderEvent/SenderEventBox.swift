@@ -12,7 +12,8 @@ import Foundation
 /// Handles UI event callbacks (e.g., target-action patterns).
 /// Compatible with Objective-C selectors and supports manual cleanup.
 @usableFromInline
-internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
+@MainActor
+internal class SenderEventBox<Sender>: NSObject, @MainActor AutoReleasable {
     /// The closure invoked when the event occurs.
     @usableFromInline
     internal var box: ((_ sender: Sender) -> Void)?
@@ -34,13 +35,7 @@ internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
     /// - Parameter sender: The object that triggered the event.
     @objc internal func invoke(_ sender: Any) {
         guard let sender = sender as? Sender else { return }
-        if Thread.isMainThread {
-            box?(sender)
-        } else {
-            DispatchQueue.main.async {
-                self.box?(sender)
-            }
-        }
+        box?(sender)
     }
 
     /// Clears the stored closure to prevent retain cycles.
