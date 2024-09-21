@@ -12,6 +12,7 @@
 ///
 /// `SenderGroup` flattens the results of all contained forwarders when
 /// resolving actions.
+@MainActor
 public struct SenderGroup: EventForwardable {
     /// The collection of event forwarders contained in this group.
     private let forwarders: [EventForwardable]
@@ -59,7 +60,7 @@ public struct SenderGroup: EventForwardable {
 ///
 /// Clients can declare several event forwarders in a single group by using
 /// multiple-statement closures, enabling structured event mapping.
-@resultBuilder public enum EventForwarderBuilder {
+@MainActor @resultBuilder public enum EventForwarderBuilder {
     /// Passes a collection of event forwarders written as child elements
     /// through unmodified.
     ///

@@ -12,6 +12,7 @@
 ///
 /// Use `EventForwarder` when you want to define event behavior for an
 /// individual sender.
+@MainActor
 public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     /// The sender associated with this forwarder.
     private let senderRef: Sender
@@ -59,7 +60,7 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
 ///     gesture(.doubleTapDidEnd) { [Action.doubleTap] }
 /// }
 /// ```
-@resultBuilder public enum SenderEventMappingBuilder<Action> {
+@MainActor @resultBuilder public enum SenderEventMappingBuilder<Action> {
     /// Passes a collection of event-actions mappings written as child elements
     /// through unmodified.
     ///

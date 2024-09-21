@@ -29,6 +29,7 @@ internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
     ///
     /// - Parameter sender: The sender object that triggered the event.
     ///   This will be type-checked against the expected sender type at runtime.
+    @MainActor
     @objc internal func invoke(_ sender: Any) {
         guard let sender = sender as? Sender else { return }
         box?(sender)
@@ -37,7 +38,7 @@ internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
     /// Clears the stored closure to break potential retain cycles.
     ///
     /// Called by memory pool managers to release memory early.
-    internal func cleanup() {
+    nonisolated internal func cleanup() {
         box = nil
     }
 }

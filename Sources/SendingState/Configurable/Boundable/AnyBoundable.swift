@@ -10,7 +10,7 @@ import Foundation
 /// A fully type-erased `Boundable` instance.
 ///
 /// Enables storage of heterogeneous `Boundable` types in collections.
-public struct AnyBoundable: Hashable {
+public struct AnyBoundable: Hashable, @unchecked Sendable {
     /// The underlying content data, type-erased as `Any`.
     public var contentData: Any? { _contentData() }
 

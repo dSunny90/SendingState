@@ -8,7 +8,7 @@
 import XCTest
 @testable import SendingState
 
-final class TestObject: Configurable {
+final class TestObject: Configurable, @unchecked Sendable {
     var inputValue: String?
     var configurer: (TestObject, String) -> Void = { obj, input in
         obj.inputValue = input

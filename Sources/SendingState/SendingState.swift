@@ -34,6 +34,7 @@ extension SendingState where Base: Configurable {
 
 #if os(iOS) || targetEnvironment(macCatalyst)
 extension SendingState where Base: UIView & EventForwardingProvider {
+    @MainActor
     public func assignActionHandler<Provider: ActionHandlingProvider>(
         to provider: Provider
     ) {
@@ -48,7 +49,7 @@ extension SendingState where Base: UIView & EventForwardingProvider {
             }
         }
     }
-
+    @MainActor
     public func assignAnyActionHandler(to provider: AnyActionHandlingProvider) {
         assignEventHandlers { sender, event in
             { [weak base, weak sender, weak provider] _ in
@@ -63,30 +64,30 @@ extension SendingState where Base: UIView & EventForwardingProvider {
     }
 
     /// Shared logic to assign handlers to gesture/control events.
+    @MainActor
     private func assignEventHandlers(
         using handlerBlock: @escaping ActionHandlerBlock
     ) {
-        DispatchQueue.main.async {
-            for (sender, event, _) in base.eventForwarder.allMappings {
-                let handler = handlerBlock(sender, event)
-                switch event {
-                case .gesture(let gesture):
-                    (sender as? UIView)?
-                        .ss.addGestureHandler(for: gesture, handler)
+        for (sender, event, _) in base.eventForwarder.allMappings {
+            let handler = handlerBlock(sender, event)
+            switch event {
+            case .gesture(let gesture):
+                (sender as? UIView)?
+                    .ss.addGestureHandler(for: gesture, handler)
 
-                case .control(let controlEvent):
-                    (sender as? UIControl)?
-                        .ss.addControlEventHandler(
-                            for: controlEvent.value.rawValue,
-                            handler
-                        )
-                }
+            case .control(let controlEvent):
+                (sender as? UIControl)?
+                    .ss.addControlEventHandler(
+                        for: controlEvent.value.rawValue,
+                        handler
+                    )
             }
         }
     }
 }
 
 extension SendingState where Base: UIView {
+    @MainActor
     fileprivate func addGestureHandler(
         for gestureEvent: SenderEvent.Gesture,
         _ handler: @escaping (_ gesture: UIGestureRecognizer) -> Void
@@ -154,6 +155,7 @@ extension SendingState where Base: UIView {
         }
     }
 
+    @MainActor
     private func attach<T: UIGestureRecognizer>(
         _ recognizer: T,
         on states: Set<UIGestureRecognizer.State>,
@@ -169,6 +171,7 @@ extension SendingState where Base: UIView {
 }
 
 extension SendingState where Base: UIControl {
+    @MainActor
     fileprivate func addControlEventHandler(
         for eventRawValue: UInt,
         _ handler: @escaping (_ sender: UIControl) -> Void
