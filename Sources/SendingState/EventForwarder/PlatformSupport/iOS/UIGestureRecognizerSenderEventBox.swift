@@ -13,7 +13,7 @@ import UIKit
 /// This box is retained by a memory pool and releases the closure and target
 /// registration during cleanup to break retain cycles.
 internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
-    : SenderEventBox<T>
+    : SenderEventBox<T>, @unchecked Sendable
 {
     /// Weak reference to the gesture recognizer to avoid retain cycle.
     private weak var recognizer: UIGestureRecognizer?
@@ -27,6 +27,7 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
     ///   - recognizer: The gesture recognizer to observe.
     ///   - states: Gesture states that trigger the action.
     ///   - actionHandler: The closure to invoke on gesture event.
+    @MainActor
     @inlinable
     internal init(
         recognizer: T,
@@ -36,20 +37,16 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
         self.allowedStates = states
         self.recognizer = recognizer
         super.init(actionHandler)
-        DispatchQueue.main.async {
-            recognizer.addTarget(self, action: #selector(self.invoke(_:)))
-        }
+        recognizer.addTarget(self, action: #selector(invoke(_:)))
     }
 
     /// Called by the system when the gesture is triggered.
+    @MainActor
     @objc override func invoke(_ sender: Any) {
-        DispatchQueue.main.async {
-            guard let recognizer = sender as? T else { return }
-            guard self.allowedStates.isEmpty ||
-                  self.allowedStates.contains(recognizer.state)
-            else { return }
-            self.box?(recognizer)
-        }
+        guard let recognizer = sender as? T else { return }
+        guard allowedStates.isEmpty || allowedStates.contains(recognizer.state)
+        else { return }
+        box?(recognizer)
     }
 
     /// Cleans up gesture recognizer registration and memory references.

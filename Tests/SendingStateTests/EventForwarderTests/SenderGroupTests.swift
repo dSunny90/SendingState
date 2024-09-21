@@ -54,6 +54,7 @@ final class SenderGroupControlsTestView: UIView, EventForwardingProvider {
 }
 
 final class SenderGroupTests: XCTestCase {
+    @MainActor
     func test_senderGroup_allTargets_addTarget_wired() {
         DispatchQueue.main.async {
             let provider = SenderGroupControlsTestView()

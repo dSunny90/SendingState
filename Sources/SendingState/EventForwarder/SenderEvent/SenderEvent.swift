@@ -12,7 +12,7 @@ import AppKit
 #endif
 
 /// Represents a UI-triggered event. (like button taps or gestures)
-public enum SenderEvent: Hashable {
+public enum SenderEvent: Hashable, @unchecked Sendable {
     #if os(iOS) || targetEnvironment(macCatalyst)
     /// UIControl.Event
     case control(Control)
@@ -50,7 +50,7 @@ public enum SenderEvent: Hashable {
         ///
         /// Example:
         ///     [.tap, .longPress] enables both tap and long press gestures.
-        public struct Kind: OptionSet, Hashable {
+        public struct Kind: OptionSet, Hashable, @unchecked Sendable {
             public let rawValue: UInt
 
             public init(rawValue: UInt) {

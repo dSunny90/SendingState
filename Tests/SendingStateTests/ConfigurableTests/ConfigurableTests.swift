@@ -8,6 +8,7 @@
 import XCTest
 @testable import SendingState
 
+@MainActor
 final class ConfigurableLogicTests: XCTestCase {
     struct Model { let value: String }
 
@@ -34,6 +35,7 @@ final class ConfigurableLogicTests: XCTestCase {
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
+@MainActor
 final class LabelViewTests: XCTestCase {
     final class LabelView: UIView, Configurable {
         struct Model {
@@ -41,7 +43,7 @@ final class LabelViewTests: XCTestCase {
             let fontSize: CGFloat
         }
 
-        var configurer: (LabelView, Model) -> Void {
+        nonisolated var configurer: (LabelView, Model) -> Void {
             { view, model in
                 DispatchQueue.main.async {
                     view.label.text = model.text
@@ -63,7 +65,7 @@ final class LabelViewTests: XCTestCase {
             fatalError("init(coder:) has not been implemented")
         }
 
-        static func size(with input: Model?,
+        nonisolated static func size(with input: Model?,
                          constrainedTo parentSize: CGSize?) -> CGSize? {
             guard let input else { return nil }
             let width = parentSize?.width ?? 100
@@ -117,6 +119,67 @@ final class LabelViewTests: XCTestCase {
     func testSizeNilModel() {
         let size = LabelView.size(with: nil, constrainedTo: nil)
         XCTAssertNil(size)
+    }
+}
+
+final class ConfigurableActorTests: XCTestCase {
+    final class MyLabel: UILabel, Configurable {
+        struct ViewModel { let text: String }
+
+        nonisolated var configurer: (MyLabel, ViewModel) -> Void {
+            { label, model in
+                DispatchQueue.main.async {
+                    label.text = model.text
+                }
+            }
+        }
+    }
+
+    @MainActor
+    final class MyUIComponent {
+        private let view: MyLabel
+
+        init(view: MyLabel) {
+            self.view = view
+        }
+
+        func configure(with model: MyLabel.ViewModel) {
+            view.ss.configure(model)
+        }
+
+        var currentText: String? {
+            view.text
+        }
+    }
+
+    actor BackgroundWorker {
+        func load() async throws -> MyLabel.ViewModel {
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+            return .init(text: "Updated")
+        }
+    }
+
+    func testMainActorUILabelConfiguration() {
+        DispatchQueue.main.async {
+            let view = MyLabel()
+            let model = MyLabel.ViewModel(text: "Hello, Actor!")
+            view.ss.configure(model)
+
+            let label = view.subviews.compactMap { $0 as? UILabel }.first
+            XCTAssertEqual(label?.text, "Hello, Actor!")
+        }
+    }
+
+    func testMainActorConfigurable() async throws {
+        let view = await MyLabel()
+        let ui = await MyUIComponent(view: view)
+        let worker = BackgroundWorker()
+
+        let model = try await worker.load()
+        await ui.configure(with: model)
+
+        let result = await ui.currentText
+        XCTAssertEqual(result, "Updated")
     }
 }
 

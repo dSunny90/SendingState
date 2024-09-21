@@ -19,6 +19,7 @@
 /// By separating UI from business logic, UI components can focus solely
 /// on presentation and event declaration,
 /// while the actual business behavior is delegated to the action handler.
+@MainActor
 public protocol EventForwardingProvider: AnyObject {
     /// The event forwarder that defines sender-event-actions mappings
     var eventForwarder: EventForwardable { get }

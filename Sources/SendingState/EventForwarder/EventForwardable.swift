@@ -34,6 +34,7 @@
 /// create your event forwarding structures using the `SenderGroup` type
 /// provided by the SendingState framework. `SenderGroup` aggregates multiple
 /// event forwarders into a unified collection.
+@MainActor
 public protocol EventForwardable {
     /// Returns all registered sender-event-actions mappings that managed by
     /// this forwarder.
