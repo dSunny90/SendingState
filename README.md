@@ -206,6 +206,70 @@ Use AnyBoundable to erase the types and bind them in a loop — no type gymnasti
     
 And just like that — your business logic is cleanly separated and elegantly handled.
 
+## Swift 6 Migration
+
+> **Background.** SendingState was originally designed in 2020, prior to Swift’s structured concurrency. When using it in a Swift 6 / strict-concurrency environment, follow these guidelines.
+
+### 1) `Configurable` (UIKit views/cells)
+
+For UI types (e.g., `UITableViewCell`, `UIView`) that adopt `Configurable`, do one of the following:
+
+**A. Pre-concurrency conformance (easiest for migration)**
+
+```swift
+// (1) Optionally soften concurrency checks for this import
+@preconcurrency import SendingState
+
+// (2) Mark the *conformance* as preconcurrency
+public final class MyCell: UITableViewCell, @preconcurrency Configurable {
+    var configurer: (MyCell, MyModel) -> Void {
+        { view, model in
+            view.label.text = model.text
+            view.label.font = UIFont.systemFont(ofSize: model.fontSize)
+        }
+    }
+}
+```
+
+**B. Actor-aware conformance (preferred long-term)**
+
+Expose a `nonisolated` configurer and hop to MainActor inside the closure.
+
+```swift
+@MainActor
+public final class MyCell: UITableViewCell, Configurable {
+    // Keep UI work on the main actor:
+    nonisolated var configurer: (MyCell, MyModel) -> Void {
+        { view, model in
+            Task { @MainActor in
+                view.label.text = model.text
+                view.label.font = UIFont.systemFont(ofSize: model.fontSize)
+            }
+        }
+    }
+}
+```
+
+> Why: nonisolated allows callers to obtain and invoke configurer without an implicit hop, while the body still updates UI safely on MainActor.
+
+### 2) `Boundable` (now Sendable)
+
+Because `Boundable` conforms to Sendable, a class-based ViewModel must ensure thread safety. If you keep it as a class, declare `@unchecked Sendable` and protect all mutable state (e.g., with NSLock). Avoid storing UI objects inside.
+
+```swift
+public final class MyViewModel: @unchecked Sendable, Boundable {
+    public var contentData: MyModel? {
+        get { lock.lock(); defer { lock.unlock() }; return _contentData }
+        set { lock.lock(); _contentData = newValue; lock.unlock() }
+    }
+
+    private let lock = NSLock()
+    private var _contentData: MyModel?
+}
+```
+
+Alternative (recommended when possible): make the ViewModel a struct (value type) so Sendable is automatic and locks aren’t needed, or wrap shared mutable state in an actor.
+
 ---
 
 ## Installation
@@ -218,13 +282,13 @@ SendingState is available via Swift Package Manager.
 2. Go to File > Add Packages…
 3. Enter the URL:  
 ```
-https://github.com/dsunny90/SendingState
+https://github.com/dSunny90/SendingState
 ```
 4. Select the version and finish
 
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dsunny90/SendingState", from: "1.0.0")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "1.0.1")
 ]
 ```
