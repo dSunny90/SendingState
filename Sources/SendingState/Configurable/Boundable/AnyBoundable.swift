@@ -38,8 +38,8 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
         _binderType = T.Binder.self
         _bindingBlock = { anyBinder in
             guard let concreteBinder = anyBinder as? T.Binder,
-                  let input = boundable.contentData
-            else { return }
+                  let input = boundable.contentData else { return }
+
             concreteBinder.configurer(concreteBinder, input)
         }
         _sizeBlock = { size in

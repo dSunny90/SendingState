@@ -9,7 +9,7 @@
 ///
 /// Maps a data model (`DataType`) to a UI component (`Binder`) that renders it.
 /// `Binder` must conform to `Configurable`.
-public protocol Boundable {
+public protocol Boundable: Sendable {
     /// The type of data to bind to the UI component.
     associatedtype DataType
     /// The UI type that renders the data.
