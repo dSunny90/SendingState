@@ -17,7 +17,11 @@ internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
     @usableFromInline
     internal var box: ((_ sender: Sender) -> Void)?
 
-    /// Initializes the box with the given closure.
+    /// An optional identifier for the owner of this resource.
+    @usableFromInline
+    internal var ownerIdentifier: ObjectIdentifier?
+
+    /// Initializes the box with a closure.
     ///
     /// - Parameter box: A closure taking a sender of type `Sender`.
     @inlinable

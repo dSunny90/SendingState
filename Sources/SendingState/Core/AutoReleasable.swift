@@ -16,7 +16,13 @@
 ///   retained by system frameworks such as UIKit or AppKit (e.g.,
 ///   gesture recognizers, control event targets).
 internal protocol AutoReleasable: AnyObject {
-    /// Called to explicitly release retained resources.
-    /// This will be triggered by a `SwiftPointerPool` when it is deallocated.
+    /// An optional identifier for the owner of this resource.
+    ///
+    /// Used to group and remove related resources together.
+    var ownerIdentifier: ObjectIdentifier? { get set }
+
+    /// Releases retained resources explicitly.
+    ///
+    /// Typically invoked by `SwiftPointerPool` during deallocation.
     func cleanup()
 }
