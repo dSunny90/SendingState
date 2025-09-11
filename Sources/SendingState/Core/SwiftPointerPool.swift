@@ -39,7 +39,26 @@ internal final class SwiftPointerPool {
         return items.compactMap { $0 as? T }.first
     }
 
-    /// Explicitly cleans up all stored objects and removes them from the pool.
+    /// Removes and cleans up all objects with the specified owner identifier.
+    ///
+    /// - Parameter identifier: The owner identifier to match.
+    internal func remove(owner identifier: ObjectIdentifier) {
+        lock.lock()
+        defer { lock.unlock() }
+        let (toRemove, toKeep) = items.reduce(
+            into: ([AutoReleasable](), [AutoReleasable]())
+        ) { result, item in
+            if item.ownerIdentifier == identifier {
+                result.0.append(item)
+            } else {
+                result.1.append(item)
+            }
+        }
+        toRemove.forEach { $0.cleanup() }
+        items = toKeep
+    }
+
+    /// Cleans up all stored objects and removes them from the pool.
     internal func cleanup() {
         lock.lock()
         defer { lock.unlock() }
