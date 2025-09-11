@@ -35,10 +35,11 @@ extension SendingState where Base: Configurable {
 #if os(iOS) || targetEnvironment(macCatalyst)
 extension SendingState where Base: UIView & EventForwardingProvider {
     @MainActor
-    public func assignActionHandler<Provider: ActionHandlingProvider>(
+    public func addActionHandler<Provider: ActionHandlingProvider>(
         to provider: Provider
     ) {
-        assignEventHandlers { sender, event in
+        let ownerID = ObjectIdentifier(provider)
+        addEventHandlers(owner: ownerID) { sender, event in
             { [weak base, weak sender, weak provider] _ in
                 guard let base, let sender, let provider else { return }
                 let actions = base.eventForwarder.actions(for: sender,
@@ -50,8 +51,9 @@ extension SendingState where Base: UIView & EventForwardingProvider {
         }
     }
     @MainActor
-    public func assignAnyActionHandler(to provider: AnyActionHandlingProvider) {
-        assignEventHandlers { sender, event in
+    public func addAnyActionHandler(to provider: AnyActionHandlingProvider) {
+        let ownerID = ObjectIdentifier(provider)
+        addEventHandlers(owner: ownerID) { sender, event in
             { [weak base, weak sender, weak provider] _ in
                 guard let base, let sender, let provider else { return }
                 let actions = base.eventForwarder.actions(for: sender,
@@ -65,7 +67,45 @@ extension SendingState where Base: UIView & EventForwardingProvider {
 
     /// Shared logic to assign handlers to gesture/control events.
     @MainActor
-    private func assignEventHandlers(
+    public func removeActionHandler<Provider: ActionHandlingProvider>(
+        from provider: Provider
+    ) {
+        let ownerID = ObjectIdentifier(provider)
+        removeEventHandlers(owner: ownerID)
+    }
+    @MainActor
+    public func removeAnyActionHandler(from provider: AnyActionHandlingProvider) {
+        let ownerID = ObjectIdentifier(provider)
+        removeEventHandlers(owner: ownerID)
+    }
+    @MainActor
+    public func removeAllActionHandlers() {
+        // Clean up handlers from all senders
+        for (sender, _, _) in base.eventForwarder.allMappings {
+            (sender as? NSObject)?.cleanupPointerPool()
+        }
+        // Also clean up the base view's pool
+        base.cleanupPointerPool()
+    }
+    @MainActor
+    public func assignActionHandler<Provider: ActionHandlingProvider>(
+        to provider: Provider
+    ) {
+        removeAllActionHandlers()
+        addActionHandler(to: provider)
+    }
+    @MainActor
+    public func assignAnyActionHandler(to provider: AnyActionHandlingProvider) {
+        removeAllActionHandlers()
+        addAnyActionHandler(to: provider)
+    }
+
+    // MARK: - Private Helpers
+
+    /// Shared logic to add handlers to gesture/control events.
+    @MainActor
+    private func addEventHandlers(
+        owner: ObjectIdentifier,
         using handlerBlock: @escaping ActionHandlerBlock
     ) {
         for (sender, event, _) in base.eventForwarder.allMappings {
@@ -73,16 +113,25 @@ extension SendingState where Base: UIView & EventForwardingProvider {
             switch event {
             case .gesture(let gesture):
                 (sender as? UIView)?
-                    .ss.addGestureHandler(for: gesture, handler)
+                    .ss.addGestureHandler(for: gesture, handler, owner: owner)
 
             case .control(let controlEvent):
                 (sender as? UIControl)?
                     .ss.addControlEventHandler(
                         for: controlEvent.value.rawValue,
-                        handler
+                        handler,
+                        owner: owner
                     )
             }
         }
+    }
+    @MainActor
+    private func removeEventHandlers(owner: ObjectIdentifier) {
+        for (sender, _, _) in base.eventForwarder.allMappings {
+            (sender as? NSObject)?.removeFromPointerPool(owner: owner)
+        }
+        // Also remove from the base view's pool
+        base.removeFromPointerPool(owner: owner)
     }
 }
 
@@ -90,7 +139,8 @@ extension SendingState where Base: UIView {
     @MainActor
     fileprivate func addGestureHandler(
         for gestureEvent: SenderEvent.Gesture,
-        _ handler: @escaping (_ gesture: UIGestureRecognizer) -> Void
+        _ handler: @escaping (_ gesture: UIGestureRecognizer) -> Void,
+        owner: ObjectIdentifier
     ) {
         if gestureEvent.kind.contains(.tap) {
             let recognizer = UITapGestureRecognizer()
@@ -100,7 +150,7 @@ extension SendingState where Base: UIView {
             if let touches = gestureEvent.numberOfTouches {
                 recognizer.numberOfTouchesRequired = touches
             }
-            attach(recognizer, on: gestureEvent.states, handler)
+            attach(recognizer, on: gestureEvent.states, handler, owner: owner)
         }
         if gestureEvent.kind.contains(.longPress) {
             let recognizer = UILongPressGestureRecognizer()
@@ -113,7 +163,7 @@ extension SendingState where Base: UIView {
             if let touches = gestureEvent.numberOfTouches {
                 recognizer.numberOfTouchesRequired = touches
             }
-            attach(recognizer, on: gestureEvent.states, handler)
+            attach(recognizer, on: gestureEvent.states, handler, owner: owner)
         }
         if gestureEvent.kind.contains(.swipe) {
             let recognizer = UISwipeGestureRecognizer()
@@ -123,34 +173,34 @@ extension SendingState where Base: UIView {
             if let touches = gestureEvent.numberOfTouches {
                 recognizer.numberOfTouchesRequired = touches
             }
-            attach(recognizer, on: gestureEvent.states, handler)
+            attach(recognizer, on: gestureEvent.states, handler, owner: owner)
         }
         if gestureEvent.kind.contains(.pan) {
             let recognizer = UIPanGestureRecognizer()
             if let touches = gestureEvent.numberOfTouches {
                 recognizer.minimumNumberOfTouches = touches
             }
-            attach(recognizer, on: gestureEvent.states, handler)
+            attach(recognizer, on: gestureEvent.states, handler, owner: owner)
         }
         if gestureEvent.kind.contains(.pinch) {
             let recognizer = UIPinchGestureRecognizer()
-            attach(recognizer, on: gestureEvent.states, handler)
+            attach(recognizer, on: gestureEvent.states, handler, owner: owner)
         }
         if gestureEvent.kind.contains(.rotation) {
             let recognizer = UIRotationGestureRecognizer()
-            attach(recognizer, on: gestureEvent.states, handler)
+            attach(recognizer, on: gestureEvent.states, handler, owner: owner)
         }
         if gestureEvent.kind.contains(.screenEdge) {
             let recognizer = UIScreenEdgePanGestureRecognizer()
             if let edges = gestureEvent.edges {
                 recognizer.edges = edges
             }
-            attach(recognizer, on: gestureEvent.states, handler)
+            attach(recognizer, on: gestureEvent.states, handler, owner: owner)
         }
         if #available(iOS 13.0, *) {
             if gestureEvent.kind.contains(.hover) {
                 let recognizer = UIHoverGestureRecognizer()
-                attach(recognizer, on: gestureEvent.states, handler)
+                attach(recognizer, on: gestureEvent.states, handler, owner: owner)
             }
         }
     }
@@ -159,14 +209,15 @@ extension SendingState where Base: UIView {
     private func attach<T: UIGestureRecognizer>(
         _ recognizer: T,
         on states: Set<UIGestureRecognizer.State>,
-        _ handler: @escaping (_ gesture: T) -> Void
+        _ handler: @escaping (_ gesture: T) -> Void,
+        owner: ObjectIdentifier
     ) {
         recognizer.cancelsTouchesInView = false
         let box = UIGestureRecognizerSenderEventBox<T>(
             recognizer: recognizer, on: states, actionHandler: handler
         )
         base.addGestureRecognizer(recognizer)
-        base.addToPointerPool(box)
+        base.addToPointerPool(box, owner: owner)
     }
 }
 
@@ -174,14 +225,15 @@ extension SendingState where Base: UIControl {
     @MainActor
     fileprivate func addControlEventHandler(
         for eventRawValue: UInt,
-        _ handler: @escaping (_ sender: UIControl) -> Void
+        _ handler: @escaping (_ sender: UIControl) -> Void,
+        owner: ObjectIdentifier
     ) {
         let box = UIControlSenderEventBox(
             control: base,
             on: UIControl.Event(rawValue: eventRawValue),
             actionHandler: handler
         )
-        base.addToPointerPool(box)
+        base.addToPointerPool(box, owner: owner)
     }
 }
 #endif
