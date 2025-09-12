@@ -51,11 +51,19 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
 
     /// Cleans up gesture recognizer registration and memory references.
     override func cleanup() {
-        DispatchQueue.main.async {
-            self.recognizer?.removeTarget(
+        let detach = {
+            guard let recognizer = self.recognizer else { return }
+            recognizer.view?.removeGestureRecognizer(recognizer)
+            recognizer.removeTarget(
                 self, action: #selector(self.invoke(_:))
             )
             self.recognizer = nil
+        }
+
+        if Thread.isMainThread {
+            detach()
+        } else {
+            DispatchQueue.main.async(execute: detach)
         }
         super.cleanup()
     }
