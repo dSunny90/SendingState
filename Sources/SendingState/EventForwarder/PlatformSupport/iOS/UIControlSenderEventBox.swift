@@ -44,11 +44,18 @@ internal final class UIControlSenderEventBox
     ///
     /// Called by memory pool or manually when the lifecycle ends.
     override func cleanup() {
-        DispatchQueue.main.async {
+        if Thread.isMainThread {
             self.control?.removeTarget(
                 self, action: #selector(self.invoke(_:)), for: self.event
             )
             self.control = nil
+        } else {
+            DispatchQueue.main.async {
+                self.control?.removeTarget(
+                    self, action: #selector(self.invoke(_:)), for: self.event
+                )
+                self.control = nil
+            }
         }
         super.cleanup()
     }
