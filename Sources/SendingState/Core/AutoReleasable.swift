@@ -5,16 +5,16 @@
 //  Created by SunSoo Jeon on 30.07.2021.
 //
 
-/// A protocol representing an object that can be explicitly cleaned up
-/// when no longer needed, typically as part of memory management.
+/// A protocol for objects that can explicitly release resources
+/// when no longer needed.
 ///
-/// Types conforming to `AutoReleasable` are meant to be retained in a
-/// `SwiftPointerPool` and are expected to release their internal resources
-/// (e.g. gesture recognizer targets, control event handlers) in `cleanup()`.
+/// Types conforming to `AutoReleasable` are typically retained in a
+/// `SwiftPointerPool` and must release their internal resources
+/// (e.g., gesture recognizer targets, control event handlers) in `cleanup()`.
 ///
-/// - Note: This protocol is mainly used to release resources that are
-///   retained by system frameworks such as UIKit or AppKit (e.g.,
-///   gesture recognizers, control event targets).
+/// - Note: This protocol is primarily used for releasing resources
+///   retained by system frameworks such as UIKit or AppKit
+///   (e.g., gesture recognizers, control event targets).
 internal protocol AutoReleasable: AnyObject {
     /// An optional identifier for the owner of this resource.
     ///

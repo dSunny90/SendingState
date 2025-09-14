@@ -7,11 +7,21 @@
 
 import Foundation
 
+/// Provides automatic resource cleanup for `NSObject` subclasses.
+///
+/// This extension manages a per-instance `SwiftPointerPool` that holds
+/// `AutoReleasable` objects and ensures they are cleaned up when the
+/// host object is deallocated.
 extension NSObject {
     private struct AssociatedKeys {
         nonisolated(unsafe) static var pool: UInt8 = 0
     }
 
+    /// The associated pointer pool for this instance.
+    ///
+    /// Creates and retains a `SwiftPointerPool` on first access using
+    /// Objective-C associated objects. The pool is automatically released
+    /// when the host object is deallocated.
     private var pointerPool: SwiftPointerPool {
         guard let pool = objc_getAssociatedObject(
             self, &AssociatedKeys.pool

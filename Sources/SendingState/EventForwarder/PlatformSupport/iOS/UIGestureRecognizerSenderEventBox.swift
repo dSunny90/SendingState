@@ -49,7 +49,14 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
         box?(recognizer)
     }
 
-    /// Cleans up gesture recognizer registration and memory references.
+    /// Removes the target-action and clears references to prevent leaks.
+    ///
+    /// Typically invoked by `SwiftPointerPool` during deallocation.
+    /// When called from the main thread (e.g., explicit `assign`/`remove`),
+    /// cleanup runs synchronously so the gesture recognizer is fully
+    /// detached before any new handler is added.
+    /// When called from a background thread (e.g., `deinit`), cleanup
+    /// is dispatched to the main queue asynchronously.
     override func cleanup() {
         let detach = {
             guard let recognizer = self.recognizer else { return }
