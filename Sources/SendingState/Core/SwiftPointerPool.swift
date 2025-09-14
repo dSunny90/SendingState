@@ -7,20 +7,22 @@
 
 import Foundation
 
-/// A pool that retains `AutoReleasable` objects and ensures they are properly
+/// A pool that retains `AutoReleasable` objects and ensures they are
 /// cleaned up when the pool is deallocated or manually cleared.
 ///
-/// This pattern helps manage memory for objects like gesture recognizers,
-/// target-action handlers, and other UIKit closures that may otherwise lead
-/// to retain cycles if not explicitly released.
+/// This helps manage resources like gesture recognizer targets,
+/// control event handlers, and other closures that may otherwise
+/// create retain cycles without explicit cleanup.
 ///
-/// - Note: Thread safety is ensured using an internal `NSLock`.
+/// Uses `NSLock` internally for thread safety.
 internal final class SwiftPointerPool {
     /// Internal storage for retained objects conforming to `AutoReleasable`.
     private var items = [AutoReleasable]()
     private let lock = NSLock()
 
-    /// Inserts a new object into the pool. The pool retains it until cleanup.
+    /// Inserts an object into the pool.
+    ///
+    /// The pool retains it until deallocation or manual cleanup.
     ///
     /// - Parameter obj: An object conforming to `AutoReleasable`.
     internal func insert(_ obj: AutoReleasable) {
@@ -29,10 +31,10 @@ internal final class SwiftPointerPool {
         items.append(obj)
     }
 
-    /// Searches the pool for an object of the given type.
+    /// Searches the pool for an object of a given type.
     ///
-    /// - Parameter type: The specific `AutoReleasable`-conforming type to find.
-    /// - Returns: The first match of that type if any, otherwise `nil`.
+    /// - Parameter type: The `AutoReleasable`-conforming type to find.
+    /// - Returns: The first matching object, or `nil` if none found.
     internal func find<T: AutoReleasable>(ofType type: T.Type) -> T? {
         lock.lock()
         defer { lock.unlock() }
