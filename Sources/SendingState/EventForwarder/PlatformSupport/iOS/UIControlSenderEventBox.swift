@@ -40,9 +40,14 @@ internal final class UIControlSenderEventBox
         control.addTarget(self, action: #selector(invoke(_:)), for: event)
     }
 
-    /// Cleans up the target and removes strong references to avoid leaks.
+    /// Removes the target-action and clears references to prevent leaks.
     ///
-    /// Called by memory pool or manually when the lifecycle ends.
+    /// Typically invoked by `SwiftPointerPool` during deallocation.
+    /// When called from the main thread (e.g., explicit `assign`/`remove`),
+    /// cleanup runs synchronously so the target-action is fully
+    /// detached before any new handler is added.
+    /// When called from a background thread (e.g., `deinit`), cleanup
+    /// is dispatched to the main queue asynchronously.
     override func cleanup() {
         if Thread.isMainThread {
             self.control?.removeTarget(
