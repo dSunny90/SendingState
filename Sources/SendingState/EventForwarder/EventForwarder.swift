@@ -17,30 +17,34 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     /// The sender associated with this forwarder.
     private let senderRef: Sender
 
-    /// The mappings from sender events to their corresponding actions.
-    private let mappings: [SenderEvent: [Any]]
+    /// The mappings from sender events to their corresponding action providers.
+    /// Closures are stored to enable lazy evaluation at event time,
+    /// allowing actions to capture real-time sender state.
+    private let mappings: [SenderEvent: () -> [Any]]
 
     /// Creates an event forwarder for a specific sender and its event-actions
     /// mappings.
     public init<Action>(
         _ sender: Sender,
         @SenderEventMappingBuilder<Action>
-        _ content: (Sender, SenderEventMappingContext) -> [SenderEvent: [Action]]
+        _ content: (Sender, SenderEventMappingContext) -> [SenderEvent: () -> [Action]]
     ) {
         senderRef = sender
         let ctx = SenderEventMappingContext()
-        mappings = content(sender, ctx).mapValues { $0.map { $0 as Any } }
+        mappings = content(sender, ctx).mapValues { actionProvider in
+            { actionProvider().map { $0 as Any } }
+        }
     }
 
     public var allMappings: [
         (sender: AnyObject, event: SenderEvent, actions: [Any])
     ] {
-        mappings.map { (sender: senderRef, event: $0.key, actions: $0.value) }
+        mappings.map { (sender: senderRef, event: $0.key, actions: $0.value()) }
     }
 
     public func actions(for sender: AnyObject, event: SenderEvent) -> [Any] {
         guard sender === senderRef else { return [] }
-        return mappings[event] ?? []
+        return mappings[event]?() ?? []
     }
 }
 
@@ -55,9 +59,9 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
 ///
 /// For example:
 /// ```swift
-/// EventForwarder(button) { sender in
-///     control(.touchUpInside) { [Action.tap] }
-///     gesture(.doubleTapDidEnd) { [Action.doubleTap] }
+/// EventForwarder(button) { sender, ctx in
+///     ctx.control(.touchUpInside) { [Action.tap] }
+///     ctx.gesture(.doubleTapDidEnd) { [Action.doubleTap] }
 /// }
 /// ```
 @MainActor @resultBuilder public enum SenderEventMappingBuilder<Action> {
@@ -68,11 +72,16 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     /// Instead, you define multiple event-actions mappings inside a closure,
     /// and the builder collects them into a single mapping dictionary.
     public static func buildBlock(
-        _ components: [SenderEvent: [Action]]...
-    ) -> [SenderEvent: [Action]] {
+        _ components: [SenderEvent: () -> [Action]]...
+    ) -> [SenderEvent: () -> [Action]] {
         components.reduce(into: [:]) { result, dic in
-            for (key, value) in dic {
-                result[key, default: []] += value
+            for (key, newProvider) in dic {
+                if let existingProvider = result[key] {
+                    // Combine multiple action providers for the same event
+                    result[key] = { existingProvider() + newProvider() }
+                } else {
+                    result[key] = newProvider
+                }
             }
         }
     }

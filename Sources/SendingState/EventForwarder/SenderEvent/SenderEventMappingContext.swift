@@ -26,44 +26,46 @@ public struct SenderEventMappingContext {
     /// Creates a control event mapping for the given control events.
     ///
     /// - Parameters:
-    ///   - events: A set of UIControl events (e.g., [.touchUpInside]).
-    ///   - actions: A closure that returns an array of action values.ㄴ도
-    /// - Returns: A mapping from SenderEvent to Action array.
+    ///   - event: A UIControl event (e.g., `.touchUpInside`).
+    ///   - actions: A closure that returns the actions to perform.
+    ///              This closure is called at event time, not at setup time.
+    /// - Returns: A mapping from the event to an action provider closure.
     public func control<Action>(
         _ event: UIControl.Event,
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
-        [.control(.init(event)): actions()]
+    ) -> [SenderEvent: () -> [Action]] {
+        [.control(.init(event)): actions]
     }
 
     /// Creates a gesture event mapping for a custom gesture event.
     ///
     /// - Parameters:
-    ///   - event: A `SenderEvent.Gesture` representing gesture type/state.
-    ///   - actions: A closure that returns an array of action values.
-    /// - Returns: A mapping from SenderEvent to Action array.
+    ///   - event: A `SenderEvent.Gesture` defining the gesture configuration.
+    ///   - actions: A closure that returns the actions to perform.
+    ///              This closure is called at event time, not at setup time.
+    /// - Returns: A mapping from the gesture event to an action provider closure.
     public func gesture<Action>(
         _ event: SenderEvent.Gesture,
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
-        [.gesture(event): actions()]
+    ) -> [SenderEvent: () -> [Action]] {
+        [.gesture(event): actions]
     }
 
     // MARK: - Sugar Gesture Generators
     /// Creates a tap gesture event mapping.
     ///
     /// - Parameters:
-    ///   - numberOfTaps: Number of taps required to trigger the gesture.
-    ///   - numberOfTouches: Number of fingers required for the gesture.
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - numberOfTaps: Required tap count (default: 1).
+    ///   - numberOfTouches: Required finger count (default: 1).
+    ///   - states: Gesture states that trigger the actions (default: `.recognized`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the tap gesture to an action provider closure.
     public func tapGesture<Action>(
         numberOfTaps: Int = 1,
         numberOfTouches: Int = 1,
         on states: Set<UIGestureRecognizer.State> = [.recognized],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .tap,
@@ -71,25 +73,25 @@ public struct SenderEventMappingContext {
                 numberOfTaps: numberOfTaps,
                 numberOfTouches: numberOfTouches
             )
-        ): actions()]
+        ): actions]
     }
 
     /// Creates a long press gesture event mapping.
     ///
     /// - Parameters:
-    ///   - minimumPressDuration: Minimum press duration in seconds.
-    ///   - numberOfTaps: Number of taps required to trigger the gesture.
-    ///   - numberOfTouches: Number of fingers required for the gesture.
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - minimumPressDuration: Minimum press duration in seconds (default: 0.5).
+    ///   - numberOfTaps: Required tap count before press (default: 0).
+    ///   - numberOfTouches: Required finger count (default: 1).
+    ///   - states: Gesture states that trigger the actions (default: `.began`, `.ended`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the long press gesture to an action provider closure.
     public func longPressGesture<Action>(
         minimumPressDuration: TimeInterval = 0.5,
         numberOfTaps: Int = 0,
         numberOfTouches: Int = 1,
         on states: Set<UIGestureRecognizer.State> = [.began, .ended],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .longPress,
@@ -98,23 +100,23 @@ public struct SenderEventMappingContext {
                 numberOfTouches: numberOfTouches,
                 minimumPressDuration: minimumPressDuration
             )
-        ): actions()]
+        ): actions]
     }
 
     /// Creates a swipe gesture event mapping.
     ///
     /// - Parameters:
-    ///   - direction: The direction in which the swipe must occur.
-    ///   - numberOfTouches: Number of fingers required for the gesture.
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - direction: Required swipe direction (default: `.right`).
+    ///   - numberOfTouches: Required finger count (default: 1).
+    ///   - states: Gesture states that trigger the actions (default: `.recognized`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the swipe gesture to an action provider closure.
     public func swipeGesture<Action>(
         direction: UISwipeGestureRecognizer.Direction = .right,
         numberOfTouches: Int = 1,
         on states: Set<UIGestureRecognizer.State> = [.recognized],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .swipe,
@@ -122,101 +124,101 @@ public struct SenderEventMappingContext {
                 numberOfTouches: numberOfTouches,
                 direction: direction
             )
-        ): actions()]
+        ): actions]
     }
 
     /// Creates a pan gesture event mapping.
     ///
     /// - Parameters:
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - states: Gesture states that trigger the actions (default: `.changed`, `.ended`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the pan gesture to an action provider closure.
     public func panGesture<Action>(
         on states: Set<UIGestureRecognizer.State> = [.changed, .ended],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .pan,
                 states: states
             )
-        ): actions()]
+        ): actions]
     }
 
     /// Creates a pinch gesture event mapping.
     ///
     /// - Parameters:
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - states: Gesture states that trigger the actions (default: `.changed`, `.ended`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the pinch gesture to an action provider closure.
     public func pinchGesture<Action>(
         on states: Set<UIGestureRecognizer.State> = [.changed, .ended],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .pinch,
                 states: states
             )
-        ): actions()]
+        ): actions]
     }
 
     /// Creates a rotation gesture event mapping.
     ///
     /// - Parameters:
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - states: Gesture states that trigger the actions (default: `.changed`, `.ended`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the rotation gesture to an action provider closure.
     public func rotationGesture<Action>(
         on states: Set<UIGestureRecognizer.State> = [.changed, .ended],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .rotation,
                 states: states
             )
-        ): actions()]
+        ): actions]
     }
 
     /// Creates a screen edge pan gesture event mapping.
     ///
     /// - Parameters:
-    ///   - edges: The screen edges from which the gesture must begin.
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - edges: Screen edges from which the gesture must begin (default: `.left`).
+    ///   - states: Gesture states that trigger the actions (default: `.recognized`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the screen edge gesture to an action provider closure.
     public func screenEdgeGesture<Action>(
         edges: UIRectEdge = .left,
         on states: Set<UIGestureRecognizer.State> = [.recognized],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .screenEdge,
                 states: states,
                 edges: edges
             )
-        ): actions()]
+        ): actions]
     }
 
     /// Creates a hover gesture event mapping (iPadOS/macCatalyst only).
     ///
     /// - Parameters:
-    ///   - states: Recognized gesture states to respond to.
-    ///   - actions: Closure returning the actions to perform.
-    /// - Returns: Mapping from `SenderEvent.gesture` to corresponding actions.
+    ///   - states: Gesture states that trigger the actions (default: `.changed`).
+    ///   - actions: A closure that returns the actions to perform.
+    /// - Returns: A mapping from the hover gesture to an action provider closure.
     @available(iOS 13.4, *)
     public func hoverGesture<Action>(
         on states: Set<UIGestureRecognizer.State> = [.changed],
         _ actions: @escaping () -> [Action]
-    ) -> [SenderEvent: [Action]] {
+    ) -> [SenderEvent: () -> [Action]] {
         [.gesture(
             .init(
                 kind: .hover,
                 states: states
             )
-        ): actions()]
+        ): actions]
     }
     #endif
 }
