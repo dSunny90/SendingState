@@ -70,6 +70,16 @@ extension NSObject {
         pointerPool.remove(owner: owner)
     }
 
+    /// Returns whether the pointer pool contains any object with the
+    /// specified owner.
+    ///
+    /// - Parameter owner: The owner identifier to search for.
+    /// - Returns: `true` if at least one object in the pool belongs to
+    ///   the given owner; otherwise `false`.
+    internal func containsInPointerPool(owner: ObjectIdentifier) -> Bool {
+        pointerPool.contains(owner: owner)
+    }
+
     /// Cleans up and removes all objects from the pointer pool.
     internal func cleanupPointerPool() {
         pointerPool.cleanup()
