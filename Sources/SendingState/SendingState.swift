@@ -108,7 +108,11 @@ extension SendingState where Base: UIView & EventForwardingProvider {
         owner: ObjectIdentifier,
         using handlerBlock: @escaping ActionHandlerBlock
     ) {
-        for (sender, event, _) in base.eventForwarder.allMappings {
+        let allMappings = base.eventForwarder.allMappings
+        guard let firstSender = allMappings.first?.sender as? NSObject,
+              !firstSender.containsInPointerPool(owner: owner)
+        else { return }
+        for (sender, event, _) in allMappings {
             let handler = handlerBlock(sender, event)
             switch event {
             case .gesture(let gesture):

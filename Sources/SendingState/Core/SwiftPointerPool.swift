@@ -60,6 +60,17 @@ internal final class SwiftPointerPool {
         items = toKeep
     }
 
+    /// Returns whether the pool contains any object with the specified owner.
+    ///
+    /// - Parameter identifier: The owner identifier to search for.
+    /// - Returns: `true` if at least one object in the pool belongs to
+    ///   the given owner; otherwise `false`.
+    internal func contains(owner identifier: ObjectIdentifier) -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return items.contains { $0.ownerIdentifier == identifier }
+    }
+
     /// Cleans up all stored objects and removes them from the pool.
     internal func cleanup() {
         lock.lock()
