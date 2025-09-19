@@ -24,3 +24,39 @@ public final class AnyActionHandlingProvider {
         _handle(action)
     }
 }
+
+#if os(iOS) || targetEnvironment(macCatalyst)
+import UIKit
+
+extension AnyActionHandlingProvider {
+    /// Attaches this handler to the view so it receives the view's
+    /// forwarded events.
+    ///
+    /// This method is idempotent: calling it multiple times with the same
+    /// view has no additional effect, making it safe to use in contexts
+    /// like `cellForItemAt` where cells are reused.
+    ///
+    /// Uses a generic parameter to open the existential type
+    /// (`any UIView & EventForwardingProvider`), which allows the
+    /// compiler to resolve the `SendingState` extension constraint that
+    /// would otherwise fail with a protocol composition existential.
+    ///
+    /// - Parameter view: The view whose events this handler will receive.
+    @MainActor
+    public func attach<V: UIView & EventForwardingProvider>(to view: V) {
+        view.ss.addAnyActionHandler(to: self)
+    }
+
+    /// Detaches this handler from the view, removing all event bindings
+    /// that were previously established via ``attach(to:)``.
+    ///
+    /// After detaching, the view's events will no longer be forwarded
+    /// to this handler.
+    ///
+    /// - Parameter view: The view to stop receiving events from.
+    @MainActor
+    public func detach<V: UIView & EventForwardingProvider>(from view: V) {
+        view.ss.removeAnyActionHandler(from: self)
+    }
+}
+#endif
