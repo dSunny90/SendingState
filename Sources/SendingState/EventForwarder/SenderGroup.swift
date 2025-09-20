@@ -7,19 +7,16 @@
 
 /// A type that groups multiple event forwarders into a single forwardable unit.
 ///
-/// Use `SenderGroup` to combine several event forwarders so they can be queried
-/// together for matching sender-event-actions mappings.
-///
-/// `SenderGroup` flattens the results of all contained forwarders when
-/// resolving actions.
+/// Use `SenderGroup` to combine event forwarders for unified action lookup.
+/// Flattens the results of all contained forwarders when resolving actions.
 @MainActor
 public struct SenderGroup: EventForwardable {
     /// The collection of event forwarders contained in this group.
     private let forwarders: [EventForwardable]
 
-    /// Creates a group of event forwarders from a closure.
+    /// Creates a group of event forwarders.
     ///
-    /// Use `SenderGroup` to collect multiple forwarders into a single structure.
+    /// - Parameter content: A closure that defines the forwarders to group.
     public init(@EventForwarderBuilder _ content: () -> [EventForwardable]) {
         self.forwarders = content()
     }
@@ -36,13 +33,12 @@ public struct SenderGroup: EventForwardable {
 }
 
 // MARK: - Result Builders
-/// A custom parameter attribute that builds event forwarders from closures.
+/// A result builder that constructs event forwarders.
 ///
-/// You typically use `EventForwarderBuilder` as a parameter attribute for
-/// closure parameters that produce one or more event forwarders, allowing
-/// those closures to provide multiple sender-actions mappings.
+/// Use `EventForwarderBuilder` to declare multiple event forwarders
+/// within a single closure.
 ///
-/// ### Example 1:
+/// ### Example 1: Multiple senders
 /// ```swift
 /// SenderGroup {
 ///     EventForwarder(button) { ... }
@@ -50,23 +46,22 @@ public struct SenderGroup: EventForwardable {
 ///     EventForwarder(view) { ... }
 /// }
 /// ```
-/// ### Example 2:
+///
+/// ### Example 2: Mixed forwarder types
 /// ```swift
-/// MyCustomEventForwardable { // your own EventForwardable
+/// MyCustomEventForwardable {
 ///     EventForwarder(button) { ... }
-///     MyCustomEventForwarder() // your own EventForwardable
+///     MyCustomEventForwarder()
 /// }
 /// ```
-///
-/// Clients can declare several event forwarders in a single group by using
-/// multiple-statement closures, enabling structured event mapping.
 @MainActor @resultBuilder public enum EventForwarderBuilder {
-    /// Passes a collection of event forwarders written as child elements
-    /// through unmodified.
+    /// Combines multiple event forwarders into an array.
     ///
-    /// You typically don't call this method directly.
-    /// Instead, you write multiple forwarder declarations inside a closure,
-    /// and the builder collects them into a group.
+    /// Typically not called directly. Instead, declare multiple forwarders
+    /// within a closure, and the builder collects them into an array.
+    ///
+    /// - Parameter components: The individual forwarders to combine.
+    /// - Returns: An array of type-erased event forwarders.
     public static func buildBlock(
         _ components: EventForwardable...
     ) -> [AnyEventForwarder] {

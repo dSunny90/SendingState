@@ -11,22 +11,24 @@ import UIKit
 import AppKit
 #endif
 
-/// Represents a UI-triggered event. (like button taps or gestures)
+/// Represents a UI-triggered event such as button taps or gestures.
 public enum SenderEvent: Hashable, @unchecked Sendable {
     #if os(iOS) || targetEnvironment(macCatalyst)
-    /// UIControl.Event
+    /// A UIControl event.
     case control(Control)
-    ///  UIGestureRecognizer event and its State
+
+    /// A UIGestureRecognizer event with its state.
     case gesture(Gesture)
-    #endif
-    #if os(macOS) && !targetEnvironment(macCatalyst)
+    #else
+    /// Placeholder for non-iOS platforms to prevent empty enum warning.
+    case _unavailable
     #endif
 
     #if os(iOS) || targetEnvironment(macCatalyst)
-    /// Wraps a `UIControl.Event` to make it `Hashable`.
+    /// Wraps `UIControl.Event` to make it hashable.
     ///
-    /// Enables control events (e.g. `.touchUpInside`) to be used as keys
-    /// in action mapping systems.
+    /// Enables control events (e.g., `.touchUpInside`) to be used as keys
+    /// for action mappings.
     public struct Control: Hashable {
         private let rawValue: UIControl.Event.RawValue
 
@@ -41,15 +43,17 @@ public enum SenderEvent: Hashable, @unchecked Sendable {
 
     /// Describes a gesture recognizer event and its trigger conditions.
     ///
-    /// Contains gesture type (e.g. tap, swipe), allowed states, and
-    /// optional parameters (e.g. number of taps, direction).
+    /// Defines the gesture type, allowed states, and optional parameters
+    /// such as tap count or swipe direction.
     public struct Gesture: Hashable {
-        /// Represents a set of gesture types that can be enabled together.
+        /// A set of gesture types that can be enabled together.
         ///
-        /// Used to configure which gesture types to attach to a view.
+        /// Configures which gesture types to attach to a view.
         ///
-        /// Example:
-        ///     [.tap, .longPress] enables both tap and long press gestures.
+        /// ### Example:
+        /// ```swift
+        /// [.tap, .longPress] // Enables both tap and long press gestures
+        /// ```
         public struct Kind: OptionSet, Hashable, @unchecked Sendable {
             public let rawValue: UInt
 
@@ -77,17 +81,17 @@ public enum SenderEvent: Hashable, @unchecked Sendable {
         public let kind: Kind
         public let states: Set<UIGestureRecognizer.State>
 
-        // tap-specific
+        // Tap-specific
         public let numberOfTaps: Int?
         public let numberOfTouches: Int?
 
-        // swipe-specific
+        // Swipe-specific
         public let direction: UISwipeGestureRecognizer.Direction?
 
-        // longPress-specific
+        // Long press-specific
         public let minimumPressDuration: TimeInterval?
 
-        // screenEdge-specific
+        // Screen edge-specific
         public let edges: UIRectEdge?
 
         @inlinable

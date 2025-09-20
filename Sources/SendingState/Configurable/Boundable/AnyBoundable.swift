@@ -7,17 +7,17 @@
 
 import Foundation
 
-/// A fully type-erased `Boundable` instance.
+/// A type-erased `Boundable` wrapper.
 ///
 /// Enables storage of heterogeneous `Boundable` types in collections.
 public struct AnyBoundable: Hashable, @unchecked Sendable {
-    /// The underlying content data, type-erased as `Any`.
+    /// The underlying content data, type-erased to `Any`.
     public var contentData: Any? { _contentData() }
 
-    /// The expected binder type to which configuration should be applied.
+    /// The binder type that can receive this configuration.
     public var binderType: Any.Type { _binderType }
 
-    /// An optional identifier used to distinguish this boundable instance.
+    /// An optional identifier for distinguishing this instance.
     public var identifier: String? { _identifier() }
 
     internal let uuid: UUID = UUID()
@@ -30,7 +30,7 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
 
     private let _identifier: () -> String?
 
-    /// Creates a type-erased boundable from a concrete `Boundable`.
+    /// Creates a type-erased wrapper from a concrete `Boundable`.
     ///
     /// - Parameter boundable: The concrete `Boundable` to wrap.
     public init<T: Boundable>(_ boundable: T) {
@@ -49,13 +49,17 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
         _identifier = { boundable.identifier }
     }
 
-    /// Applies the configuration to the given binder instance.
+    /// Applies the configuration to the given binder.
     ///
-    /// - Parameter binder: An instance that should match `binderType`.
+    /// - Parameter binder: A binder instance matching `binderType`.
     public func bound(to binder: Any) {
         _bindingBlock(binder)
     }
 
+    /// Calculates the size needed to display the content.
+    ///
+    /// - Parameter size: The parent container's size constraint.
+    /// - Returns: The calculated size, or `.zero` if unavailable.
     public func size(constrainedTo size: CGSize) -> CGSize {
         return _sizeBlock?(size) ?? .zero
     }

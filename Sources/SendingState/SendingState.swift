@@ -5,11 +5,19 @@
 //  Created by SunSoo Jeon on 23.11.2020.
 //
 
+/// A namespace wrapper that provides SendingState functionality
+/// through the `.ss` accessor.
+///
+/// `SendingState` itself is stateless; it simply holds a reference to
+/// the `base` object and exposes extended behaviour via constrained
+/// extensions.
 public struct SendingState<Base> {
     public let base: Base
     public init(_ base: Base) { self.base = base }
 }
 
+/// Conforming types gain a `.ss` namespace accessor that returns
+/// `SendingState<Self>`, enabling the library's extensions.
 public protocol SendingStateHost {}
 extension SendingStateHost {
     public var ss: SendingState<Self> { SendingState(self) }
@@ -22,11 +30,14 @@ import UIKit
 extension UIView: SendingStateHost {}
 #endif
 
+/// A closure factory that, given a sender–event pair from an
+/// ``EventForwardable`` mapping, returns a handler closure to be
+/// invoked when that event fires.
 fileprivate typealias ActionHandlerBlock =
     (_ sender: AnyObject, _ event: SenderEvent) -> (_ sender: AnyObject) -> Void
 
 extension SendingState where Base: Configurable {
-    /// Sugar for `configurer(self, input)`
+    /// Convenience for `base.configurer(base, input)`.
     public func configure<T>(_ input: T) where T == Base.Input {
         base.configurer(base, input)
     }
@@ -34,6 +45,16 @@ extension SendingState where Base: Configurable {
 
 #if os(iOS) || targetEnvironment(macCatalyst)
 extension SendingState where Base: UIView & EventForwardingProvider {
+
+    // MARK: - Add
+
+    /// Registers the typed action handler so it receives events forwarded
+    /// by this view's ``EventForwardable`` mappings.
+    ///
+    /// The handler is identified by its `ObjectIdentifier`, so adding the
+    /// same instance again is a no-op (idempotent).
+    ///
+    /// - Parameter provider: The handler to register.
     @MainActor
     public func addActionHandler<Provider: ActionHandlingProvider>(
         to provider: Provider
@@ -50,6 +71,14 @@ extension SendingState where Base: UIView & EventForwardingProvider {
             }
         }
     }
+
+    /// Registers the type-erased action handler so it receives events
+    /// forwarded by this view's ``EventForwardable`` mappings.
+    ///
+    /// The handler is identified by its `ObjectIdentifier`, so adding the
+    /// same instance again is a no-op (idempotent).
+    ///
+    /// - Parameter provider: The type-erased handler to register.
     @MainActor
     public func addAnyActionHandler(to provider: AnyActionHandlingProvider) {
         let ownerID = ObjectIdentifier(provider)
@@ -65,7 +94,12 @@ extension SendingState where Base: UIView & EventForwardingProvider {
         }
     }
 
-    /// Shared logic to assign handlers to gesture/control events.
+    // MARK: - Remove
+
+    /// Removes the typed action handler from this view, cleaning up all
+    /// event bindings that were created by ``addActionHandler(to:)``.
+    ///
+    /// - Parameter provider: The handler to remove.
     @MainActor
     public func removeActionHandler<Provider: ActionHandlingProvider>(
         from provider: Provider
@@ -73,20 +107,33 @@ extension SendingState where Base: UIView & EventForwardingProvider {
         let ownerID = ObjectIdentifier(provider)
         removeEventHandlers(owner: ownerID)
     }
+
+    /// Removes the type-erased action handler from this view, cleaning up
+    /// all event bindings that were created by ``addAnyActionHandler(to:)``.
+    ///
+    /// - Parameter provider: The type-erased handler to remove.
     @MainActor
     public func removeAnyActionHandler(from provider: AnyActionHandlingProvider) {
         let ownerID = ObjectIdentifier(provider)
         removeEventHandlers(owner: ownerID)
     }
+
+    /// Removes **all** action handlers from this view and its senders,
+    /// regardless of owner.
     @MainActor
     public func removeAllActionHandlers() {
-        // Clean up handlers from all senders
         for (sender, _, _) in base.eventForwarder.allMappings {
             (sender as? NSObject)?.cleanupPointerPool()
         }
-        // Also clean up the base view's pool
         base.cleanupPointerPool()
     }
+
+    // MARK: - Assign (replace)
+
+    /// Removes all existing action handlers, then registers the given
+    /// typed handler as the sole receiver of this view's forwarded events.
+    ///
+    /// - Parameter provider: The handler to assign.
     @MainActor
     public func assignActionHandler<Provider: ActionHandlingProvider>(
         to provider: Provider
@@ -94,6 +141,12 @@ extension SendingState where Base: UIView & EventForwardingProvider {
         removeAllActionHandlers()
         addActionHandler(to: provider)
     }
+
+    /// Removes all existing action handlers, then registers the given
+    /// type-erased handler as the sole receiver of this view's forwarded
+    /// events.
+    ///
+    /// - Parameter provider: The type-erased handler to assign.
     @MainActor
     public func assignAnyActionHandler(to provider: AnyActionHandlingProvider) {
         removeAllActionHandlers()
@@ -102,7 +155,20 @@ extension SendingState where Base: UIView & EventForwardingProvider {
 
     // MARK: - Private Helpers
 
-    /// Shared logic to add handlers to gesture/control events.
+    /// Iterates through the base view's event forwarder mappings and
+    /// registers gesture recognizer or control-event handlers for each
+    /// sender–event pair.
+    ///
+    /// This method is idempotent: if the owner already has handlers
+    /// registered on a sender, the call is a no-op. This makes it safe
+    /// to invoke repeatedly (e.g. on every `cellForItemAt` call) without
+    /// accumulating duplicate handlers.
+    ///
+    /// - Parameters:
+    ///   - owner: An identifier that groups the created handler boxes,
+    ///     allowing batch removal later via ``removeEventHandlers(owner:)``.
+    ///   - handlerBlock: A factory that produces a handler closure for a
+    ///     given sender–event pair.
     @MainActor
     private func addEventHandlers(
         owner: ObjectIdentifier,
@@ -129,17 +195,29 @@ extension SendingState where Base: UIView & EventForwardingProvider {
             }
         }
     }
+    /// Removes all handler boxes belonging to the given owner from every
+    /// sender's pointer pool, then from the base view's own pool.
+    ///
+    /// - Parameter owner: The identifier whose handler boxes should be
+    ///   removed.
     @MainActor
     private func removeEventHandlers(owner: ObjectIdentifier) {
         for (sender, _, _) in base.eventForwarder.allMappings {
             (sender as? NSObject)?.removeFromPointerPool(owner: owner)
         }
-        // Also remove from the base view's pool
         base.removeFromPointerPool(owner: owner)
     }
 }
 
 extension SendingState where Base: UIView {
+    /// Creates and attaches `UIGestureRecognizer` instances to the base
+    /// view based on the kinds specified in the gesture event descriptor.
+    ///
+    /// - Parameters:
+    ///   - gestureEvent: The gesture descriptor containing kind, states,
+    ///     and optional configuration (tap count, touch count, etc.).
+    ///   - handler: The closure invoked when the gesture fires.
+    ///   - owner: The owner identifier for the created handler boxes.
     @MainActor
     fileprivate func addGestureHandler(
         for gestureEvent: SenderEvent.Gesture,
@@ -209,6 +287,14 @@ extension SendingState where Base: UIView {
         }
     }
 
+    /// Configures a gesture recognizer, adds it to the base view, and
+    /// stores the handler box in the view's pointer pool.
+    ///
+    /// - Parameters:
+    ///   - recognizer: The gesture recognizer to attach.
+    ///   - states: The recognizer states that should trigger the handler.
+    ///   - handler: The closure invoked when the gesture fires.
+    ///   - owner: The owner identifier for the created handler box.
     @MainActor
     private func attach<T: UIGestureRecognizer>(
         _ recognizer: T,
@@ -226,6 +312,14 @@ extension SendingState where Base: UIView {
 }
 
 extension SendingState where Base: UIControl {
+    /// Registers a control-event handler on the base control and stores
+    /// the handler box in the control's pointer pool.
+    ///
+    /// - Parameters:
+    ///   - eventRawValue: The raw value of the `UIControl.Event` to
+    ///     observe.
+    ///   - handler: The closure invoked when the control event fires.
+    ///   - owner: The owner identifier for the created handler box.
     @MainActor
     fileprivate func addControlEventHandler(
         for eventRawValue: UInt,
