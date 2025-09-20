@@ -22,12 +22,12 @@ flowchart LR
         Start(["viewDidLoad"])
         subgraph Inbound["🟢 Inbound"]
             direction TB
-            Model["Model"] --> ViewModel["ViewModel\n(Boundable)"]
-            ViewModel -->|"bound(to:)"| View1["View\n(Configurable)"]
+            Model["Model"] --> ViewModel["ViewModel<br/>(Boundable)"]
+            ViewModel -->|"bound(to:)"| View1["View<br/>(Configurable)"]
         end
         subgraph Outbound["🔴 Outbound"]
             direction TB
-            View2["View\n(EventForwardingProvider)"] -->|"👆 User Interaction"| ViewController["View Controller\n(ActionHandlingProvider)"]
+            View2["View<br/>(EventForwardingProvider)"] -->|"👆 User Interaction"| ViewController["View Controller<br/>(ActionHandlingProvider)"]
         end
     end
     subgraph BgThread["Background Thread"]
@@ -37,21 +37,11 @@ flowchart LR
     Start --> Request
     Response --> Inbound
     Inbound -->|"assignActionHandler(to:)"| Outbound
-    Outbound -->|"#1 handle(action:)\nrequires API call"| Request
-    Outbound -->|"#2 handle(action:)\nno API call"| Inbound
+    Outbound -->|"#1 handle(action:)<br/>requires API call"| Request
+    Outbound -->|"#2 handle(action:)<br/>no API call"| Inbound
 
-    style Start fill:#e2e3e5,stroke:#6c757d
-    style MainThread fill:#f8f9fa,stroke:#adb5bd,stroke-width:2px
-    style BgThread fill:#f8f9fa,stroke:#adb5bd,stroke-width:2px
     style Inbound fill:#d4edda,stroke:#28a745
     style Outbound fill:#f8d7da,stroke:#dc3545
-    style Request fill:#e2e3e5,stroke:#6c757d
-    style Response fill:#e2e3e5,stroke:#6c757d
-    style Model fill:#e8daef,stroke:#8e44ad
-    style ViewModel fill:#e8daef,stroke:#8e44ad
-    style View1 fill:#dbeafe,stroke:#3b82f6
-    style View2 fill:#dbeafe,stroke:#3b82f6
-    style ViewController fill:#dbeafe,stroke:#3b82f6
 ```
 
 
@@ -373,6 +363,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "1.1.0")
+    .package(url: "https://github.com/dSunny90/SendingState", .upToNextMajor(from: "1.1.0"))
 ]
 ```
