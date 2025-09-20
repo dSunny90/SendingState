@@ -14,14 +14,14 @@ import CoreGraphics
 /// Calling `configure(_:)` applies that input to the object.
 ///
 /// Adopting this protocol allows you to:
-/// - Pass state or view model explicitly, without storing it.
-/// - Avoid retain cycles by not strongly capturing `self` inside `configurer`.
-/// - Separate configuration logic from state ownership.
-/// - Focus solely on how to present the state.
+/// - Pass state or view models explicitly without storing them
+/// - Avoid retain cycles without capturing `self` strongly inside `configurer`
+/// - Separate configuration logic from state ownership
+/// - Focus on presentation logic
 ///
-/// By tying a specific input type to a concrete view or object,
-/// this protocol reduces type casting and boilerplate,
-/// and makes configuration type-safe and intuitive.
+/// By associating a specific input type with a concrete view or object,
+/// this protocol reduces type casting and boilerplate
+/// while making configuration type-safe and intuitive.
 ///
 /// ### Example:
 /// ```swift
@@ -35,23 +35,23 @@ import CoreGraphics
 ///         }
 ///     }
 /// }
-///
-
+/// ```
 public protocol Configurable: AnyObject {
     associatedtype Input
-    /// A closure that applies the input to update the receiver.
+    /// A closure that applies an input to update the receiver.
     ///
-    /// The `configurer` defines how `Self` responds to the given `Input`.
+    /// The `configurer` defines how `Self` responds to a given `Input`.
     /// Call `ss.configure(_:)` to apply the configuration.
     var configurer: (Self, Input) -> Void { get }
 
-    /// Returns a size for the component based on the provided input
+    /// Returns the preferred size for the component based on the provided input
     /// and optional parent constraint.
     ///
     /// - Parameters:
     ///   - input: Data used to determine the preferred size.
-    ///   - parentSize: Optional size constraint from the parent container.
-    /// - Returns: The estimated size the component needs to display the input.
+    ///   - parentSize: An optional size constraint from the parent container.
+    /// - Returns: The estimated size required to display the input,
+    ///            or `nil` if no size calculation is needed.
     static func size(with input: Input?,
                      constrainedTo parentSize: CGSize?) -> CGSize?
 }

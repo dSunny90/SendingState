@@ -12,29 +12,34 @@
 public protocol Boundable: Sendable {
     /// The type of data to bind to the UI component.
     associatedtype DataType
+
     /// The UI type that renders the data.
     associatedtype Binder: Configurable where Binder.Input == DataType
 
-    /// The actual data to render.
+    /// The data to be rendered.
     var contentData: DataType? { get set }
+
     /// The view type used to render the data.
     var binderType: Binder.Type { get }
 
-    /// Optional identifier to distinguish between boundables
+    /// An optional identifier to distinguish between boundables.
     var identifier: String? { get }
 }
 
 public extension Boundable {
     var identifier: String? { nil }
 
+    /// Binds the current data to the given binder.
+    ///
+    /// Applies `contentData` to the binder using its `configurer`.
     func bound(to binder: Binder) {
         guard let input = contentData else { return }
         binder.configurer(binder, input)
     }
 
-    /// Erases the concrete type for flexible API use.
+    /// Erases the concrete type for flexible APIs.
     ///
-    /// Keeps binding behavior while hiding the type.
+    /// Preserves binding behavior while hiding the concrete type.
     /// - Returns: A type-erased wrapper.
     func eraseToAnyBoundable() -> AnyBoundable { AnyBoundable(self) }
 }

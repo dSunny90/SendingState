@@ -1,42 +1,76 @@
 # SendingState
 
-➡️ SendingState is a lightweight Swift framework that helps you cleanly structure UI components around three clear roles: configuring, binding, and forwarding user interactions — all in a one-way flow.
+➡️ SendingState is a lightweight Swift framework that helps you cleanly structure UI components around three clear roles: configuring, binding, and forwarding user interactions — all in a predictable, one-way flow.
 
 [![SwiftPM compatible](https://img.shields.io/badge/SwiftPM-compatible-brightgreen.svg)](https://swift.org/package-manager/) ![Swift](https://img.shields.io/badge/Swift-5.7-orange.svg) ![Platform](https://img.shields.io/badge/platform-iOS%2012%20%7C%20macOS%2010.13%20%7C%20tvOS%2012%20%7C%20watchOS%204-brightgreen) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Purpose
 
-**SendingState** defines a clean and consistent way for UI components to receive state and forward user interactions — all through a predictable, one-way flow.
+**SendingState** provides a consistent pattern for UI components to receive state and forward user interactions through unidirectional data flow.
 
-It consists of two main flows:
+It defines two main channels:
 
 - **🟢 Inbound (Configurable + Boundable)**  
-  A component receives a model to configure itself and can optionally be bound to a view model for continuous updates.  
-  Once configured, it may **remain bound** to dynamic view model state.  
+  Components receive models for configuration and can bind to view models for continuous updates. 
 
 - **🔴 Outbound (EventForwarder)**  
-  User interactions such as taps, gestures are **forwarded outward** as declarative actions.  
+  User interactions are forwarded as declarative actions.  
 
-When you’re building a data-driven UI in Swift, it’s common to fall into a mix of patterns — configuring views directly, reacting to user events with @IBAction, and juggling internal state inside UI components.
-These approaches often work… until your app scales. Then things get messy.
+```mermaid
+flowchart LR
+    subgraph MainThread["Main Thread"]
+        Start(["viewDidLoad"])
+        subgraph Inbound["🟢 Inbound"]
+            direction TB
+            Model["Model"] --> ViewModel["ViewModel\n(Boundable)"]
+            ViewModel -->|"bound(to:)"| View1["View\n(Configurable)"]
+        end
+        subgraph Outbound["🔴 Outbound"]
+            direction TB
+            View2["View\n(EventForwardingProvider)"] -->|"👆 User Interaction"| ViewController["View Controller\n(ActionHandlingProvider)"]
+        end
+    end
+    subgraph BgThread["Background Thread"]
+        Request["API Request"] -->|"async"| Response["API Response"]
+    end
+
+    Start --> Request
+    Response --> Inbound
+    Inbound -->|"assignActionHandler(to:)"| Outbound
+    Outbound -->|"#1 handle(action:)\nrequires API call"| Request
+    Outbound -->|"#2 handle(action:)\nno API call"| Inbound
+
+    style Start fill:#e2e3e5,stroke:#6c757d
+    style MainThread fill:#f8f9fa,stroke:#adb5bd,stroke-width:2px
+    style BgThread fill:#f8f9fa,stroke:#adb5bd,stroke-width:2px
+    style Inbound fill:#d4edda,stroke:#28a745
+    style Outbound fill:#f8d7da,stroke:#dc3545
+    style Request fill:#e2e3e5,stroke:#6c757d
+    style Response fill:#e2e3e5,stroke:#6c757d
+    style Model fill:#e8daef,stroke:#8e44ad
+    style ViewModel fill:#e8daef,stroke:#8e44ad
+    style View1 fill:#dbeafe,stroke:#3b82f6
+    style View2 fill:#dbeafe,stroke:#3b82f6
+    style ViewController fill:#dbeafe,stroke:#3b82f6
+```
+
+
+When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly, reacting to user events with @IBAction, and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
 
 You start to wonder:
 - Where should this logic live — in the view, the view controller, or the view model?
 - Why does this button action still fire after the view was reused?
-- Why are my components holding state they shouldn’t?
+- Why are my components holding state they shouldn't?
 
-**SendingState** is a minimal set of conventions to bring structure and clarity to this chaos.
-It gives every component a clean way to receive state, bind view models, and forward user intent — all in a one-way, predictable flow.
+**SendingState** brings structure and clarity to this chaos. It gives every component a clear way to receive state, bind view models, and forward user intent through a unidirectional pipeline.
 
-Because it’s all about **sending**.
+The name reflects its core principle:
 
-- Sending model to a view (configure)
-- Sending viewModel to a view (bind)
-- Sending user events back (forward)
+- **Send** models to views (configure)
+- **Send** view models to views (bind)
+- **Send** user events back (forward)
 
-Think of it as the unidirectional pipeline for your component logic
-
-Let’s take a closer look at what usually goes wrong when we mix UI, state, and logic without clear boundaries.
+Let's look at what typically goes wrong when we mix UI, state, and logic without clear boundaries.
 
 ### 💣 The Usual UI Chaos
 
@@ -53,8 +87,9 @@ Let’s take a closer look at what usually goes wrong when we mix UI, state, and
 }
 ```
 
+#### Problems:
+
 - UI events are tightly coupled with application logic
-- No clear separation between input and processing
 - Hard to test, reuse, or refactor independently
 
 #### Gesture handling with scattered selectors
@@ -69,9 +104,10 @@ Let’s take a closer look at what usually goes wrong when we mix UI, state, and
 }
 ```
 
-- Event logic is spread across multiple methods with no clear structure
+#### Problems:
+
+- Event logic is spread across multiple methods
 - Hard to trace which UI triggers which action
-- Adds complexity as gestures and selectors grow
 
 #### Configurations that mutate passed-in state
 
@@ -91,8 +127,10 @@ class MyCell: UITableViewCell {
 }
 ```
 
+#### Problems:
+
 - Stores and mutates input state internally
-- Breaks one-way data flow principles
+- Breaks unidirectional data flow
 - Introduces side effects and hidden state changes
 
 ### 🛠️ With **SendingState**
@@ -134,9 +172,11 @@ class MyInteractor: NSObject, ActionHandlingProvider {
 }
 ```
 
-- **Declarative event mapping** – Define all UI events clearly and locally
-- **Clear separation of view and logic** – Views forward, Interactor handles
-- **Scalable and testable structure** – Add actions without touching the UI
+#### Benefits:
+
+- Declarative event mapping with clear local definitions
+- Views forward events, interactors handle logic
+- Easy to add actions without touching UI code
 
 #### Stateless configuration
 
@@ -155,9 +195,12 @@ class MyViewController: UIViewController {
     }
 }
 ```
-- **No internal state mutation** – The view doesn’t store or alter the model internally
-- **Unidirectional data flow** – Data goes in via configure, no implicit feedback loop
-- **Decoupled and testable UI** – View logic is stateless and easy to verify
+
+#### Benefits:
+
+- No internal state mutation
+- Clear unidirectional data flow
+- Decoupled and testable UI components
 
 #### Safe binding
 
@@ -169,11 +212,11 @@ class MyViewController: UIViewController {
 }
 ```
 
-- **One-way binding from logic to view** – ViewModel updates the view, not the other way around
-- **No retained or leaked state in the view** – View remains stateless and passive
-- **Easy to compose and replace view logic** – ViewModel controls flow without modifying UI internals
+#### Benefits:
 
-Let the code guide you — just follow me.
+- View models control updates without modifying UI internals
+- No retained or leaked state in views
+- Easy to compose and swap view logic
 
 ---
 
@@ -181,38 +224,79 @@ Let the code guide you — just follow me.
 
 ### Configurable:
 
-1. Adopt the Configurable protocol in your view.
-2. Implement the configurer to define how the view should be updated with a model.
-3. Call `aView.ss.configure(model)` whenever you want to apply new data — that’s it.
+1. Adopt the `Configurable` protocol in your view
+2. Implement the **configurer** to define how the view updates with a model
+3. Call `aView.ss.configure(model)` whenever you want to apply new data
 
-The data flows in one direction only — from model to view.
-No need to capture self or worry about memory leaks — all closures are safely handled.
+Data flows in one direction only — from model to view. All closures are safely handled with no need to capture self or worry about memory leaks.
 
 ### Boundable:
 
-1. After adopting Configurable, conform your view to Boundable.
-2. Implement the binding logic so your ViewModel can update the view reactively.
-3. Use `viewModel.bound(to: view)` to connect the two.
+1. After adopting `Configurable`, conform your view to `Boundable`
+2. Implement the binding logic so your view model can update the view reactively
+3. Use `viewModel.bound(to: view)` to connect them
 
-Want to drive a collection of views from an array of data?
-Use AnyBoundable to erase the types and bind them in a loop — no type gymnastics, just clean bindings.
+For collections of views driven by arrays of data, use `AnyBoundable` to erase types and bind them in a loop — no type gymnastics required.
 
 ### EventForwarder:
 
-1. In views that handle user input (like a UIButton or UIView with a gesture), conform to EventForwardingProvider.
-2. Use EventForwarder blocks to declare which events trigger which actions.
-3. In your viewController or interactor, conform to ActionHandlingProvider and handle actions centrally.
-4. Use `aView.ss.assignActionHandler(to: self.interactor)` to prepare for forwarding events.
+1. In views that handle user input (buttons, views with gestures), conform to `EventForwardingProvider`
+2. Use `EventForwarder` blocks to declare which events trigger which actions
+3. In your view controller or interactor, conform to `ActionHandlingProvider` and handle actions centrally
+4. Use `aView.ss.addActionHandler(to: self.interactor)` to connect the flow
     
-And just like that — your business logic is cleanly separated and elegantly handled.
+Your business logic is now cleanly separated and elegantly handled.
+
+#### Type-Erased Handler with `attach(to:)` / `detach(from:)`
+
+When working with reusable cells (e.g. `UICollectionView`, `UITableView`), you often don't know the concrete cell type at the point of handler attachment. `AnyActionHandlingProvider` wraps any typed handler into a type-erased form, and its `attach(to:)` / `detach(from:)` instance methods solve the Swift existential limitation that prevents calling `view.ss.addAnyActionHandler(to:)` through a protocol composition existential.
+
+```mermaid
+sequenceDiagram
+    participant DS as DataSource
+    participant Cell as EventForwardingProvider<br/>(Cell)
+    participant AH as AnyActionHandlingProvider
+    participant H as ActionHandlingProvider<br/>(View Controller or Interactor)
+
+    DS->>Cell: dequeueReusableCell
+    DS->>Cell: item.bound(to: cell)
+    DS->>AH: attach(to: cell)
+    Note over AH,Cell: safe to call on every cellForItemAt
+
+    Cell-->>AH: User taps button
+    AH-->>H: handle(action:)
+```
+
+```swift
+// Wrap your typed handler once
+let actionHandler = AnyActionHandlingProvider(interactor)
+
+// In cellForItemAt — safe to call repeatedly on reused cells
+func collectionView(_ collectionView: UICollectionView,
+                    cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    let cell = collectionView.dequeueReusableCell(
+        withReuseIdentifier: identifier, for: indexPath
+    )
+    item.bound(to: cell)
+
+    if let aCell = cell as? (UIView & EventForwardingProvider) {
+        actionHandler.attach(to: aCell)
+    }
+    return cell
+}
+```
+
+- **Idempotent** — calling `attach(to:)` multiple times on the same cell has no additional effect; no duplicate handlers accumulate
+- **Existential-safe** — the generic parameter opens the existential type, bypassing Swift's limitation where `any UIView & EventForwardingProvider` cannot satisfy `Base: UIView & EventForwardingProvider`
+- **Symmetric API** — use `detach(from:)` to remove the handler when needed
 
 ## Swift 6 Migration
 
-> **Background.** SendingState was originally designed in 2020, prior to Swift’s structured concurrency. When using it in a Swift 6 / strict-concurrency environment, follow these guidelines.
+> **Background.** SendingState was originally designed in 2020, prior to Swift's structured concurrency. When using it in a Swift 6 / strict-concurrency environment, follow these guidelines.
 
 ### 1) `Configurable` (UIKit views/cells)
 
-For UI types (e.g., `UITableViewCell`, `UIView`) that adopt `Configurable`, do one of the following:
+For UI types (e.g., `UITableViewCell`, `UIView`) that adopt `Configurable`, choose one of the following:
 
 **A. Pre-concurrency conformance (easiest for migration)**
 
@@ -233,7 +317,7 @@ public final class MyCell: UITableViewCell, @preconcurrency Configurable {
 
 **B. Actor-aware conformance (preferred long-term)**
 
-Expose a `nonisolated` configurer and hop to MainActor inside the closure.
+Expose a `nonisolated` configurer and hop to `MainActor` inside the closure.
 
 ```swift
 @MainActor
@@ -250,11 +334,11 @@ public final class MyCell: UITableViewCell, Configurable {
 }
 ```
 
-> Why: nonisolated allows callers to obtain and invoke configurer without an implicit hop, while the body still updates UI safely on MainActor.
+> Why: `nonisolated` allows callers to obtain and invoke configurer without an implicit hop, while the body still updates UI safely on `MainActor`.
 
 ### 2) `Boundable` (now Sendable)
 
-Because `Boundable` conforms to Sendable, a class-based ViewModel must ensure thread safety. If you keep it as a class, declare `@unchecked Sendable` and protect all mutable state (e.g., with NSLock). Avoid storing UI objects inside.
+Because `Boundable` conforms to `Sendable`, a class-based view model must ensure thread safety. If you keep it as a class, declare `@unchecked Sendable` and protect all mutable state (e.g., with `NSLock`). Avoid storing UI objects inside.
 
 ```swift
 public final class MyViewModel: @unchecked Sendable, Boundable {
@@ -268,7 +352,7 @@ public final class MyViewModel: @unchecked Sendable, Boundable {
 }
 ```
 
-Alternative (recommended when possible): make the ViewModel a struct (value type) so Sendable is automatic and locks aren’t needed, or wrap shared mutable state in an actor.
+Alternative (recommended when possible): Make the view model a struct (value type) so `Sendable` is automatic and locks aren’t needed, or wrap shared mutable state in an actor.
 
 ---
 
@@ -289,6 +373,6 @@ https://github.com/dSunny90/SendingState
 ### Using Package.swift:
 ```swift
 dependencies: [
-    .package(url: "https://github.com/dSunny90/SendingState", from: "1.0.1")
+    .package(url: "https://github.com/dSunny90/SendingState", from: "1.1.0")
 ]
 ```

@@ -5,9 +5,17 @@
 //  Created by SunSoo Jeon on 24.08.2021.
 //
 
+/// A type-erased wrapper for `ActionHandlingProvider`.
+///
+/// Enables storage and handling of action handlers with different
+/// associated action types, hiding the underlying concrete type.
 public final class AnyActionHandlingProvider {
     private let _handle: (Any) -> Void
 
+    /// Creates a type-erased action handler from a concrete provider.
+    ///
+    /// - Parameter base: The concrete `ActionHandlingProvider` to wrap.
+    ///   Held weakly to avoid retain cycles.
     public init<T: ActionHandlingProvider>(_ base: T) {
         _handle = { [weak base] action in
             guard let base else { return }
@@ -17,9 +25,10 @@ public final class AnyActionHandlingProvider {
         }
     }
 
-    /// Handles a type-erased action.
+    /// Handles a type-erased action. Attempts to cast the action
+    /// to the underlying type before handling.
     ///
-    /// Internally attempts to cast the action to the expected type.
+    /// - Parameter action: The action to handle.
     public func handle(action: Any) {
         _handle(action)
     }

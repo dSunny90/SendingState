@@ -8,25 +8,25 @@
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
-/// A wrapper that connects a UIGestureRecognizer to an action handler closure.
+/// A wrapper that connects gesture recognizers to action handler closures.
 ///
-/// This box is retained by a memory pool and releases the closure and target
-/// registration during cleanup to break retain cycles.
+/// Retained by a memory pool and releases resources during cleanup
+/// to prevent retain cycles.
 internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
     : SenderEventBox<T>, @unchecked Sendable
 {
-    /// Weak reference to the gesture recognizer to avoid retain cycle.
+    /// Weak reference to the gesture recognizer to prevent retain cycles.
     private weak var recognizer: UIGestureRecognizer?
 
-    /// Allowed states to invoke the handler (e.g., [.recognized]).
+    /// Gesture states that trigger the handler (e.g., `.recognized`).
     private var allowedStates: Set<UIGestureRecognizer.State> = []
 
     /// Initializes the box and registers the gesture recognizer.
     ///
     /// - Parameters:
     ///   - recognizer: The gesture recognizer to observe.
-    ///   - states: Gesture states that trigger the action.
-    ///   - actionHandler: The closure to invoke on gesture event.
+    ///   - states: Gesture states that trigger the action (default: `.recognized`).
+    ///   - actionHandler: The closure invoked when the gesture occurs.
     @MainActor
     @inlinable
     internal init(
@@ -40,7 +40,7 @@ internal final class UIGestureRecognizerSenderEventBox<T: UIGestureRecognizer>
         recognizer.addTarget(self, action: #selector(invoke(_:)))
     }
 
-    /// Called by the system when the gesture is triggered.
+    /// Invoked when the gesture recognizer's state changes.
     @MainActor
     @objc override func invoke(_ sender: Any) {
         guard let recognizer = sender as? T else { return }

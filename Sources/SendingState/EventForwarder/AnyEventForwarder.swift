@@ -5,14 +5,12 @@
 //  Created by SunSoo Jeon on 03.10.2022.
 //
 
-/// A type-erased wrapper for any `EventForwardable` conformer.
+/// A type-erased wrapper for `EventForwardable` conformers.
 ///
-/// `AnyEventForwarder` allows you to store heterogeneous forwarders in
-/// collections or work with them uniformly without exposing their underlying
-/// concrete types.
+/// Enables storage of heterogeneous forwarders in collections
+/// without exposing their concrete types.
 ///
-/// Use `AnyEventForwarder` when you need to abstract away the specific
-/// event forwarder types.
+/// Use when abstracting away specific forwarder types.
 @MainActor
 public struct AnyEventForwarder: EventForwardable {
     /// A closure that resolves actions for a given sender and event.
@@ -23,8 +21,9 @@ public struct AnyEventForwarder: EventForwardable {
         (sender: AnyObject, event: SenderEvent, actions: [Any])
     ]
 
-    /// Creates a type-erased event forwarder from any `EventForwardable`
-    /// conformer.
+    /// Creates a type-erased wrapper from an `EventForwardable` conformer.
+    ///
+    /// - Parameter base: The `EventForwardable` conformer to wrap.
     public init<EventForwardableType: EventForwardable>(
         _ base: EventForwardableType
     ) {

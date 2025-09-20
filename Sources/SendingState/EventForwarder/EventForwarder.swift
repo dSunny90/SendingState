@@ -5,13 +5,12 @@
 //  Created by SunSoo Jeon on 15.05.2021.
 //
 
-/// A type that associates a specific sender with event-actions mappings.
+/// A type that maps events from a specific sender to actions.
 ///
-/// `EventForwarder` captures a sender instance and defines a set of mappings
-/// between sender events and the actions to forward when those events occur.
+/// `EventForwarder` captures a sender and defines mappings from its events
+/// to the actions forwarded when those events occur.
 ///
-/// Use `EventForwarder` when you want to define event behavior for an
-/// individual sender.
+/// Use `EventForwarder` to define event behavior for a specific sender.
 @MainActor
 public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     /// The sender associated with this forwarder.
@@ -22,8 +21,12 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     /// allowing actions to capture real-time sender state.
     private let mappings: [SenderEvent: () -> [Any]]
 
-    /// Creates an event forwarder for a specific sender and its event-actions
+    /// Creates an event forwarder for a specific sender with event-to-action
     /// mappings.
+    ///
+    /// - Parameters:
+    ///   - sender: The sender whose events to forward.
+    ///   - content: A closure that defines the event-to-action mappings.
     public init<Action>(
         _ sender: Sender,
         @SenderEventMappingBuilder<Action>
@@ -48,16 +51,13 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     }
 }
 
-/// A custom parameter attribute that builds sender-event-to-action mappings
-/// from closures.
+/// A result builder that constructs event-to-action mappings.
 ///
+/// Use `SenderEventMappingBuilder` to define multiple event-to-action mappings
+/// for a single sender, grouping UI events (control events, gesture recognizer
+/// events, delegate callbacks, and other interactions) within a closure.
 ///
-/// You typically use `SenderEventMappingBuilder` to define multiple
-/// event-to-action mappings for a single sender, allowing you to group UI
-/// events — including control events, gesture recognizer events, delegate
-/// callbacks, and other interaction events — within a closure.
-///
-/// For example:
+/// ### Example:
 /// ```swift
 /// EventForwarder(button) { sender, ctx in
 ///     ctx.control(.touchUpInside) { [Action.tap] }
@@ -65,12 +65,13 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
 /// }
 /// ```
 @MainActor @resultBuilder public enum SenderEventMappingBuilder<Action> {
-    /// Passes a collection of event-actions mappings written as child elements
-    /// through unmodified.
+    /// Combines multiple event-to-action mappings into a single dictionary.
     ///
-    /// You typically don't call this method directly.
-    /// Instead, you define multiple event-actions mappings inside a closure,
-    /// and the builder collects them into a single mapping dictionary.
+    /// Typically not called directly. Instead, define multiple mappings
+    /// inside a closure, and the builder merges them into a single dictionary.
+    ///
+    /// - Parameter components: The individual mapping dictionaries to combine.
+    /// - Returns: A merged dictionary of all event-to-action mappings.
     public static func buildBlock(
         _ components: [SenderEvent: () -> [Action]]...
     ) -> [SenderEvent: () -> [Action]] {

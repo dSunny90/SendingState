@@ -8,12 +8,13 @@
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 #endif
-/// A context passed to the EventForwarder for defining event-action mappings.
+
+/// A context for defining event-to-action mappings in `EventForwarder`.
 ///
-/// Used within the result builder block of `EventForwarder`,
-/// allowing users to call `.control(...)`, `.gesture(...)`, etc.
+/// Provides methods like `control(...)` and `gesture(...)`
+/// within `EventForwarder`'s result builder.
 ///
-/// - Example:
+/// ### Example:
 /// ```swift
 /// EventForwarder(button) { sender, ctx in
 ///     ctx.control([.touchUpInside]) {
@@ -21,9 +22,12 @@ import UIKit
 ///     }
 /// }
 /// ```
+///
+/// The action closure is evaluated lazily at event time, allowing
+/// you to capture real-time sender state (e.g., `sender.isOn`, `sender.value`).
 public struct SenderEventMappingContext {
     #if os(iOS) || targetEnvironment(macCatalyst)
-    /// Creates a control event mapping for the given control events.
+    /// Creates a control event mapping.
     ///
     /// - Parameters:
     ///   - event: A UIControl event (e.g., `.touchUpInside`).
@@ -37,7 +41,7 @@ public struct SenderEventMappingContext {
         [.control(.init(event)): actions]
     }
 
-    /// Creates a gesture event mapping for a custom gesture event.
+    /// Creates a custom gesture event mapping.
     ///
     /// - Parameters:
     ///   - event: A `SenderEvent.Gesture` defining the gesture configuration.
@@ -51,8 +55,9 @@ public struct SenderEventMappingContext {
         [.gesture(event): actions]
     }
 
-    // MARK: - Sugar Gesture Generators
-    /// Creates a tap gesture event mapping.
+    // MARK: - Gesture Convenience Methods
+
+    /// Creates a tap gesture mapping.
     ///
     /// - Parameters:
     ///   - numberOfTaps: Required tap count (default: 1).
@@ -76,7 +81,7 @@ public struct SenderEventMappingContext {
         ): actions]
     }
 
-    /// Creates a long press gesture event mapping.
+    /// Creates a long press gesture mapping.
     ///
     /// - Parameters:
     ///   - minimumPressDuration: Minimum press duration in seconds (default: 0.5).
@@ -103,7 +108,7 @@ public struct SenderEventMappingContext {
         ): actions]
     }
 
-    /// Creates a swipe gesture event mapping.
+    /// Creates a swipe gesture mapping.
     ///
     /// - Parameters:
     ///   - direction: Required swipe direction (default: `.right`).
@@ -127,7 +132,7 @@ public struct SenderEventMappingContext {
         ): actions]
     }
 
-    /// Creates a pan gesture event mapping.
+    /// Creates a pan gesture mapping.
     ///
     /// - Parameters:
     ///   - states: Gesture states that trigger the actions (default: `.changed`, `.ended`).
@@ -145,7 +150,7 @@ public struct SenderEventMappingContext {
         ): actions]
     }
 
-    /// Creates a pinch gesture event mapping.
+    /// Creates a pinch gesture mapping.
     ///
     /// - Parameters:
     ///   - states: Gesture states that trigger the actions (default: `.changed`, `.ended`).
@@ -163,7 +168,7 @@ public struct SenderEventMappingContext {
         ): actions]
     }
 
-    /// Creates a rotation gesture event mapping.
+    /// Creates a rotation gesture mapping.
     ///
     /// - Parameters:
     ///   - states: Gesture states that trigger the actions (default: `.changed`, `.ended`).
@@ -181,7 +186,7 @@ public struct SenderEventMappingContext {
         ): actions]
     }
 
-    /// Creates a screen edge pan gesture event mapping.
+    /// Creates a screen edge pan gesture mapping.
     ///
     /// - Parameters:
     ///   - edges: Screen edges from which the gesture must begin (default: `.left`).
@@ -202,7 +207,7 @@ public struct SenderEventMappingContext {
         ): actions]
     }
 
-    /// Creates a hover gesture event mapping (iPadOS/macCatalyst only).
+    /// Creates a hover gesture mapping (iOS 13.4+).
     ///
     /// - Parameters:
     ///   - states: Gesture states that trigger the actions (default: `.changed`).

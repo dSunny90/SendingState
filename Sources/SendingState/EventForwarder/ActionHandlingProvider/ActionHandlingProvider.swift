@@ -5,21 +5,21 @@
 //  Created by SunSoo Jeon on 25.03.2021.
 //
 
-/// A class-only protocol that defines an action handler for UI events.
+/// A protocol for handling actions forwarded from UI components.
 ///
-/// A common usage pattern is for an `EventForwardingProvider`
-/// (e.g., a view or UI component) to call `assignActionHandler(to:)`
-/// from a `SendingState` extension, passing this.
+/// Typically adopted by interactors or view controllers.
+/// UI components conforming to `EventForwardingProvider` can forward
+/// actions to this handler via `addActionHandler(to:)`.
 ///
-/// This protocol allows separation of UI interactions from business logic
-/// by delegating action handling to dedicated objects.
+/// This protocol enables the separation of UI interactions from business logic
+/// by centralizing action handling in dedicated objects.
 public protocol ActionHandlingProvider: AnyObject {
     associatedtype Action
-    /// Handles the given action.
+
+    /// Handles a forwarded action.
     ///
-    /// This method is typically called when an event occurs and an associated
-    /// action is dispatched.
+    /// Called when an action is dispatched from a UI component.
     ///
-    /// - Parameter action: The action to be handled.
+    /// - Parameter action: The action to handle.
     func handle(action: Action)
 }
