@@ -9,11 +9,11 @@ import Foundation
 
 /// A base class that wraps an event handler closure for a specific sender type.
 ///
-/// Used to handle UI event callbacks (e.g., target-actions).
-/// Supports Objective-C selector compatibility and manual cleanup.
+/// Handles UI event callbacks (e.g., target-action patterns).
+/// Compatible with Objective-C selectors and supports manual cleanup.
 @usableFromInline
 internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
-    /// The closure to be invoked when the event occurs.
+    /// The closure invoked when the event occurs.
     @usableFromInline
     internal var box: ((_ sender: Sender) -> Void)?
 
@@ -23,25 +23,26 @@ internal class SenderEventBox<Sender>: NSObject, AutoReleasable {
 
     /// Initializes the box with a closure.
     ///
-    /// - Parameter box: A closure taking a sender of type `Sender`.
+    /// - Parameter box: A closure that receives the sender.
     @inlinable
     internal init(_ box: @escaping (_ sender: Sender) -> Void) {
         self.box = box
     }
 
-    /// Invokes the stored closure using the provided sender object.
+    /// Invokes the stored closure with the sender.
     ///
-    /// - Parameter sender: The sender object that triggered the event.
-    ///   This will be type-checked against the expected sender type at runtime.
+    /// The sender is type-checked at runtime.
+    ///
+    /// - Parameter sender: The object that triggered the event.
     @MainActor
     @objc internal func invoke(_ sender: Any) {
         guard let sender = sender as? Sender else { return }
         box?(sender)
     }
 
-    /// Clears the stored closure to break potential retain cycles.
+    /// Clears the stored closure to prevent retain cycles.
     ///
-    /// Called by memory pool managers to release memory early.
+    /// Typically invoked by `SwiftPointerPool` during cleanup.
     nonisolated internal func cleanup() {
         box = nil
     }

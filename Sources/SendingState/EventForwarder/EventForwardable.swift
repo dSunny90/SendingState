@@ -5,19 +5,15 @@
 //  Created by SunSoo Jeon on 25.03.2021.
 //
 
-/// Declares that a type can describe and forward actions when a sender and its
-/// associated event are triggered.
+/// A protocol for types that map UI events to actions and forward them.
 ///
-/// An event forwardable type maintains a list of sender-event-actions
-/// relationships, and can forward the associated actions dynamically when the
-/// corresponding event on a sender occurs.
+/// Maintains sender-event-action mappings and forwards actions when events occur.
 ///
-/// You typically define `Action` as an `enum`, listing all possible actions
-/// your UI can emit. If additional data, such as a `String`, `Int`, or sender
-/// information, needs to accompany an action, use associated values in your
-/// `enum` cases.
+/// Typically, you define `Action` as an enum listing all possible actions
+/// your UI can emit. Use associated values for actions that need additional data
+/// such as user input or sender information.
 ///
-/// For example:
+/// ### Example:
 /// ```swift
 /// enum MyAction {
 ///     case applyMyFilter
@@ -28,26 +24,27 @@
 /// }
 /// ```
 ///
-/// **Creating Your Own Event Forwarding Structures**
+/// ### Creating Event Forwarding Structures
 ///
-/// Instead of implementing the `EventForwardable` protocol directly,
-/// create your event forwarding structures using the `SenderGroup` type
-/// provided by the SendingState framework. `SenderGroup` aggregates multiple
+/// Use `SenderGroup` to build event forwarders rather than implementing
+/// `EventForwardable` directly. `SenderGroup` aggregates multiple
 /// event forwarders into a unified collection.
 @MainActor
 public protocol EventForwardable {
-    /// Returns all registered sender-event-actions mappings that managed by
-    /// this forwarder.
+    /// All registered sender-event-action mappings managed by this forwarder.
     ///
-    /// Use this property when you need to enumerate all sender-event
-    /// relationships, such as when dynamically attaching targets or observing
-    /// available event at runtime.
+    /// Use this property to enumerate sender-event relationships, such as
+    /// when dynamically attaching targets or observing available events at runtime.
     var allMappings: [(sender: AnyObject, event: SenderEvent, actions: [Any])] { get }
 
     /// Returns the actions for a given sender and event.
     ///
-    /// Use this method to retrieve the actions to forward when a particular
-    /// sender triggers a corresponding event.
-    /// If no matching mapping exists, returns an empty array.
+    /// Retrieves the actions to forward when a sender triggers an event.
+    /// Returns an empty array if no matching mapping exists.
+    ///
+    /// - Parameters:
+    ///   - sender: The sender object that triggered the event.
+    ///   - event: The event that occurred.
+    /// - Returns: An array of actions to forward.
     func actions(for sender: AnyObject, event: SenderEvent) -> [Any]
 }

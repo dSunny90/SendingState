@@ -5,22 +5,19 @@
 //  Created by SunSoo Jeon on 25.03.2021.
 //
 
-/// A protocol that declares a property for exposing an event forwarder.
+/// A protocol for components that forward UI events as actions.
 ///
-/// Conforming types provide an `eventForwarder` that describes
-/// how sender events are mapped to actions.
+/// Conforming types provide an `eventForwarder` that defines
+/// how UI events map to actions.
 ///
-/// A common usage pattern is to call `assignActionHandler(to:)`
-/// from a `SendingState` extension, passing an `ActionHandler` object
-/// that listens to sender events and dispatches the associated actions.
+/// Typically adopted by views or UI components. Call `addActionHandler(to:)`
+/// to connect the forwarder to an `ActionHandlingProvider` that handles
+/// the dispatched actions.
 ///
-/// This approach standardizes event-driven action forwarding across components,
-/// promoting a declarative and consistent mapping flow.
-/// By separating UI from business logic, UI components can focus solely
-/// on presentation and event declaration,
-/// while the actual business behavior is delegated to the action handler.
+/// This separates UI concerns from business logic: views declare events,
+/// while handlers process the corresponding actions.
 @MainActor
 public protocol EventForwardingProvider: AnyObject {
-    /// The event forwarder that defines sender-event-actions mappings
+    /// The event forwarder that defines event-to-action mappings.
     var eventForwarder: EventForwardable { get }
 }
