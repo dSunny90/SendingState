@@ -20,28 +20,34 @@ It defines two main channels:
 flowchart LR
     subgraph MainThread["Main Thread"]
         Start(["viewDidLoad"])
-        subgraph Inbound["🟢 Inbound"]
+
+        subgraph Inbound["🟢 Inbound (State Update)"]
             direction TB
             Model["Model"] --> ViewModel["ViewModel<br/>(Boundable)"]
             ViewModel -->|"bound(to:)"| View1["View<br/>(Configurable)"]
         end
-        subgraph Outbound["🔴 Outbound"]
+
+        subgraph Outbound["🔴 Outbound (User Events)"]
             direction TB
             View2["View<br/>(EventForwardingProvider)"] -->|"👆 User Interaction"| ViewController["View Controller<br/>(ActionHandlingProvider)"]
         end
     end
-    subgraph BgThread["Background Thread"]
+
+    subgraph BgThread["Network Layer (Async)"]
         Request["API Request"] -->|"async"| Response["API Response"]
     end
 
     Start --> Request
     Response --> Inbound
     Inbound -->|"assignActionHandler(to:)"| Outbound
+
     Outbound -->|"#1 handle(action:)<br/>requires API call"| Request
     Outbound -->|"#2 handle(action:)<br/>no API call"| Inbound
 
-    style Inbound fill:#d4edda,stroke:#28a745
-    style Outbound fill:#f8d7da,stroke:#dc3545
+    style Inbound stroke:#16a34a,stroke-width:2px
+    style Outbound stroke:#dc2626,stroke-width:2px
+    style MainThread stroke:#64748b,stroke-width:1.5px
+    style BgThread stroke:#64748b,stroke-width:1.5px,stroke-dasharray: 6 3
 ```
 
 
