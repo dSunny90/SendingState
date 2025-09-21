@@ -37,7 +37,12 @@ fileprivate typealias ActionHandlerBlock =
     (_ sender: AnyObject, _ event: SenderEvent) -> (_ sender: AnyObject) -> Void
 
 extension SendingState where Base: Configurable {
-    /// Convenience for `base.configurer(base, input)`.
+    /// Applies the given input to the base object via its `configurer`.
+    ///
+    /// This is a convenience for `base.configurer(base, input)`.
+    /// Because `Configurable` is `@MainActor`-isolated, this method
+    /// must also be called on the main actor.
+    @MainActor
     public func configure<T>(_ input: T) where T == Base.Input {
         base.configurer(base, input)
     }
