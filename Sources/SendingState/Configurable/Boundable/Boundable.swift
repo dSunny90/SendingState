@@ -29,13 +29,13 @@ public protocol Boundable: Sendable {
 public extension Boundable {
     var identifier: String? { nil }
 
-    /// Binds the current data to the given binder.
-    ///
     /// Applies `contentData` to the binder using its `configurer`.
     /// Must be called on the main actor because `Configurable` is
     /// `@MainActor`-isolated.
+    ///
+    /// - Parameter binder: The component to configure.
     @MainActor
-    func bound(to binder: Binder) {
+    func apply(to binder: Binder) {
         guard let input = contentData else { return }
         binder.configurer(binder, input)
     }

@@ -56,7 +56,7 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
     ///
     /// - Parameter binder: A binder instance matching `binderType`.
     @MainActor
-    public func bound(to binder: Any) {
+    public func apply(to binder: Any) {
         _bindingBlock(binder)
     }
 
