@@ -23,12 +23,13 @@ struct TestModel: Boundable {
     var binderType: TestObject.Type { TestObject.self }
 }
 
+@MainActor
 final class BoundableTests: XCTestCase {
     func testBoundableConfiguresBinderCorrectly() {
         let model = TestModel(contentData: "Hello")
         let obj = TestObject()
 
-        model.bound(to: obj)
+        model.apply(to: obj)
 
         XCTAssertEqual(obj.inputValue, "Hello")
     }
@@ -38,7 +39,7 @@ final class BoundableTests: XCTestCase {
         let erased = AnyBoundable(model)
         let obj = TestObject()
 
-        erased.bound(to: obj)
+        erased.apply(to: obj)
 
         XCTAssertEqual(obj.inputValue, "Hello")
     }
@@ -51,31 +52,6 @@ final class BoundableTests: XCTestCase {
         class Dummy {}
 
         let dummy = Dummy()
-        XCTAssertNoThrow(erased.bound(to: dummy))
-    }
-
-    func testBoundableThreadSafetyUnderLoad() {
-        let model = TestModel(contentData: "ThreadSafe")
-        let erased = AnyBoundable(model)
-        let expectation = XCTestExpectation(description: "Thread safety check")
-
-        let obj = TestObject()
-        let queue = DispatchQueue.global(qos: .userInitiated)
-
-        let group = DispatchGroup()
-        for _ in 0..<1000 {
-            group.enter()
-            queue.async {
-                erased.bound(to: obj)
-                group.leave()
-            }
-        }
-
-        group.notify(queue: .main) {
-            XCTAssertEqual(obj.inputValue, "ThreadSafe")
-            expectation.fulfill()
-        }
-
-        wait(for: [expectation], timeout: 5.0)
+        XCTAssertNoThrow(erased.apply(to: dummy))
     }
 }

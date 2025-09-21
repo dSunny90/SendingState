@@ -10,8 +10,8 @@
 
 It defines two main channels:
 
-- **🟢 Inbound (Configurable + Boundable)**  
-  Components receive models for configuration and can bind to view models for continuous updates. 
+- **🟢 Inbound (Configurable + Boundable)**
+  Components receive models for configuration. View models deliver state snapshots to views through one-way binding.
 
 - **🔴 Outbound (EventForwarder)**  
   User interactions are forwarded as declarative actions.  
@@ -50,6 +50,35 @@ flowchart LR
     style BgThread stroke:#64748b,stroke-width:1.5px,stroke-dasharray: 6 3
 ```
 
+
+## Philosophy
+
+SendingState is built on one belief: **most UI doesn't need a reactive stream.**
+
+Frameworks like RxSwift and Combine are powerful — they model asynchronous data as continuous streams and give you operators to transform, combine, and throttle them. But that power comes at a cost: a learning curve, a dependency, and conceptual overhead that many apps simply don't need.
+
+Think about a typical screen: you fetch data, hand it to a view, and the view renders it. That's not a stream — it's a one-shot delivery. The data isn't flowing in real time; it's sent once, and the view configures itself. For this pattern, a full reactive framework is overkill.
+
+**SendingState takes a deliberately minimal approach:**
+
+- **State is sent, not streamed.** A `Boundable` (view model) holds a snapshot of data and delivers it to a `Configurable` view. There is no subscription, no observation, no signal — just a direct, synchronous handoff.
+- **No runtime overhead.** No publishers, no subscribers, no cancellables, no schedulers. Configuration is a plain function call.
+- **One-way by design.** Data flows from model to view. User intent flows from view to handler. These two channels never cross.
+
+Even for scenarios that feel "real-time" — like reflecting user input as they type — you don't need a reactive framework. A simple `NSKeyValueObservation` (KVO) is enough to observe property changes and feed them into SendingState:
+
+```swift
+observation = textField.observe(\.text) { [weak self] field, _ in
+    let model = MyModel(text: field.text ?? "")
+    self?.myView.ss.configure(model)
+}
+```
+
+No publishers, no sinks, no `AnyCancellable` — just a plain observer that sends state to a view. This pattern covers most "live update" use cases (text fields, sliders, switches) without pulling in Combine.
+
+If your app needs truly continuous data streams — live stock prices, WebSocket feeds, or continuous sensor data — use Apple's [Combine](https://developer.apple.com/documentation/combine) framework or structured concurrency with `AsyncSequence`. SendingState doesn't try to replace them; it covers the other 90% of UI work where you just need to send state to a view and move on.
+
+---
 
 When building data-driven UIs in Swift, it's common to fall into a mix of patterns — configuring views directly, reacting to user events with @IBAction, and juggling internal state inside UI components. These approaches often work… until your app scales. Then things get messy.
 
@@ -203,7 +232,7 @@ class MyViewController: UIViewController {
 ```swift
 class MyViewController: UIViewController {
     func bindViewModel(with viewModel: MyViewModel) {
-        viewModel.bound(to: myView)
+        viewModel.apply(to: myView)
     }
 }
 ```
@@ -228,9 +257,9 @@ Data flows in one direction only — from model to view. All closures are safely
 
 ### Boundable:
 
-1. After adopting `Configurable`, conform your view to `Boundable`
-2. Implement the binding logic so your view model can update the view reactively
-3. Use `viewModel.bound(to: view)` to connect them
+1. After adopting `Configurable`, conform your view model to `Boundable`
+2. Implement the binding logic so your view model can deliver state to the view
+3. Use `viewModel.apply(to: view)` to apply the state
 
 For collections of views driven by arrays of data, use `AnyBoundable` to erase types and bind them in a loop — no type gymnastics required.
 
@@ -255,7 +284,7 @@ sequenceDiagram
     participant H as ActionHandlingProvider<br/>(View Controller or Interactor)
 
     DS->>Cell: dequeueReusableCell
-    DS->>Cell: item.bound(to: cell)
+    DS->>Cell: item.apply(to: cell)
     DS->>AH: attach(to: cell)
     Note over AH,Cell: safe to call on every cellForItemAt
 
@@ -273,7 +302,7 @@ func collectionView(_ collectionView: UICollectionView,
     let cell = collectionView.dequeueReusableCell(
         withReuseIdentifier: identifier, for: indexPath
     )
-    item.bound(to: cell)
+    item.apply(to: cell)
 
     if let aCell = cell as? (UIView & EventForwardingProvider) {
         actionHandler.attach(to: aCell)
@@ -288,67 +317,50 @@ func collectionView(_ collectionView: UICollectionView,
 
 ## Swift 6 Migration
 
-> **Background.** SendingState was originally designed in 2020, prior to Swift's structured concurrency. When using it in a Swift 6 / strict-concurrency environment, follow these guidelines.
+> **Background.** SendingState was originally designed in 2020, prior to Swift's structured concurrency. Starting from v1.1, the `Configurable` protocol is `@MainActor`-isolated, so adopting it in Swift 6 is straightforward.
 
-### 1) `Configurable` (UIKit views/cells)
+### 1) `Configurable` — now `@MainActor`
 
-For UI types (e.g., `UITableViewCell`, `UIView`) that adopt `Configurable`, choose one of the following:
-
-**A. Pre-concurrency conformance (easiest for migration)**
+`Configurable` is `@MainActor`-isolated. UIView subclasses (which are themselves `@MainActor`) can adopt it directly with no extra boilerplate:
 
 ```swift
-// (1) Optionally soften concurrency checks for this import
-@preconcurrency import SendingState
-
-// (2) Mark the *conformance* as preconcurrency
-public final class MyCell: UITableViewCell, @preconcurrency Configurable {
+class MyCell: UITableViewCell, Configurable {
     var configurer: (MyCell, MyModel) -> Void {
-        { view, model in
-            view.label.text = model.text
-            view.label.font = UIFont.systemFont(ofSize: model.fontSize)
+        { cell, model in
+            cell.label.text = model.text
+            cell.label.font = UIFont.systemFont(ofSize: model.fontSize)
         }
     }
 }
 ```
 
-**B. Actor-aware conformance (preferred long-term)**
+No `nonisolated`, no `Task { @MainActor in }`, no `DispatchQueue.main.async` — just write your configuration logic directly.
 
-Expose a `nonisolated` configurer and hop to `MainActor` inside the closure.
+### 2) `Boundable` (Sendable)
+
+`Boundable` conforms to `Sendable`, so it can safely cross actor boundaries. Use a struct (recommended) for automatic `Sendable` conformance:
 
 ```swift
-@MainActor
-public final class MyCell: UITableViewCell, Configurable {
-    // Keep UI work on the main actor:
-    nonisolated var configurer: (MyCell, MyModel) -> Void {
-        { view, model in
-            Task { @MainActor in
-                view.label.text = model.text
-                view.label.font = UIFont.systemFont(ofSize: model.fontSize)
-            }
-        }
-    }
+struct MyViewModel: Boundable {
+    var contentData: MyModel?
+    var binderType: MyCell.Type { MyCell.self }
 }
 ```
 
-> Why: `nonisolated` allows callers to obtain and invoke configurer without an implicit hop, while the body still updates UI safely on `MainActor`.
-
-### 2) `Boundable` (now Sendable)
-
-Because `Boundable` conforms to `Sendable`, a class-based view model must ensure thread safety. If you keep it as a class, declare `@unchecked Sendable` and protect all mutable state (e.g., with `NSLock`). Avoid storing UI objects inside.
+If you need a class-based view model, declare `@unchecked Sendable` and protect mutable state:
 
 ```swift
-public final class MyViewModel: @unchecked Sendable, Boundable {
-    public var contentData: MyModel? {
+final class MyViewModel: @unchecked Sendable, Boundable {
+    var contentData: MyModel? {
         get { lock.lock(); defer { lock.unlock() }; return _contentData }
         set { lock.lock(); _contentData = newValue; lock.unlock() }
     }
 
     private let lock = NSLock()
     private var _contentData: MyModel?
+    var binderType: MyCell.Type { MyCell.self }
 }
 ```
-
-Alternative (recommended when possible): Make the view model a struct (value type) so `Sendable` is automatic and locks aren’t needed, or wrap shared mutable state in an actor.
 
 ---
 
