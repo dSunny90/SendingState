@@ -8,7 +8,7 @@
 /// Describes how a data model is bound to a configurable UI component.
 ///
 /// Maps a data model (`DataType`) to a UI component (`Binder`) that renders it.
-/// `Binder` must conform to `Configurable`.
+/// `Binder` must conform to ``Configurable``, which is `@MainActor`-isolated.
 public protocol Boundable: Sendable {
     /// The type of data to bind to the UI component.
     associatedtype DataType
@@ -32,6 +32,9 @@ public extension Boundable {
     /// Binds the current data to the given binder.
     ///
     /// Applies `contentData` to the binder using its `configurer`.
+    /// Must be called on the main actor because `Configurable` is
+    /// `@MainActor`-isolated.
+    @MainActor
     func bound(to binder: Binder) {
         guard let input = contentData else { return }
         binder.configurer(binder, input)

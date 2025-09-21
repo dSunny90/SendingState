@@ -9,9 +9,14 @@ import CoreGraphics
 
 /// A protocol for objects that can be configured with a typed input.
 ///
+/// `Configurable` is `@MainActor`-isolated because its primary use case is
+/// binding data to UI components (`UIView`, `NSView`, etc.), which are
+/// themselves main-actor–bound. This lets conforming types access
+/// UI properties directly inside `configurer` without extra dispatching.
+///
 /// Use `configurer` to define how the object responds to a given `Input`,
 /// such as a view model or rendering state.
-/// Calling `configure(_:)` applies that input to the object.
+/// Calling `ss.configure(_:)` applies that input to the object.
 ///
 /// Adopting this protocol allows you to:
 /// - Pass state or view models explicitly without storing them
@@ -27,21 +32,24 @@ import CoreGraphics
 /// ```swift
 /// class MyCell: UICollectionViewCell, Configurable {
 ///     @IBOutlet weak var myLabel: UILabel!
-///     var configurer: ((MyCell, MyViewModel) -> Void) {
-///         { view, viewModel in
-///             DispatchQueue.main.async {
-///                 view.myLabel.text = viewModel.title
-///             }
+///     var configurer: (MyCell, MyViewModel) -> Void {
+///         { cell, viewModel in
+///             cell.myLabel.text = viewModel.title
 ///         }
 ///     }
 /// }
 /// ```
+@MainActor
 public protocol Configurable: AnyObject {
     associatedtype Input
     /// A closure that applies an input to update the receiver.
     ///
     /// The `configurer` defines how `Self` responds to a given `Input`.
     /// Call `ss.configure(_:)` to apply the configuration.
+    ///
+    /// Because `Configurable` is `@MainActor`-isolated, you can safely
+    /// mutate UI properties inside this closure without additional
+    /// dispatching.
     var configurer: (Self, Input) -> Void { get }
 
     /// Returns the preferred size for the component based on the provided input
@@ -52,13 +60,13 @@ public protocol Configurable: AnyObject {
     ///   - parentSize: An optional size constraint from the parent container.
     /// - Returns: The estimated size required to display the input,
     ///            or `nil` if no size calculation is needed.
-    static func size(with input: Input?,
-                     constrainedTo parentSize: CGSize?) -> CGSize?
+    nonisolated static func size(with input: Input?,
+                                 constrainedTo parentSize: CGSize?) -> CGSize?
 }
 
 public extension Configurable {
-    static func size(with input: Input?,
-                     constrainedTo parentSize: CGSize?) -> CGSize? {
+    nonisolated static func size(with input: Input?,
+                                 constrainedTo parentSize: CGSize?) -> CGSize? {
         return nil
     }
 }

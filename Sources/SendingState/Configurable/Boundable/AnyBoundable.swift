@@ -25,7 +25,7 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
     private let _contentData: () -> Any?
     private let _binderType: Any.Type
 
-    private let _bindingBlock: (Any) -> Void
+    private let _bindingBlock: @MainActor (Any) -> Void
     private let _sizeBlock: ((CGSize) -> CGSize)?
 
     private let _identifier: () -> String?
@@ -51,7 +51,11 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
 
     /// Applies the configuration to the given binder.
     ///
+    /// Must be called on the main actor because `Configurable` is
+    /// `@MainActor`-isolated.
+    ///
     /// - Parameter binder: A binder instance matching `binderType`.
+    @MainActor
     public func bound(to binder: Any) {
         _bindingBlock(binder)
     }
