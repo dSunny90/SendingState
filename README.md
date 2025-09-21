@@ -24,7 +24,7 @@ flowchart LR
         subgraph Inbound["🟢 Inbound (State Update)"]
             direction TB
             Model["Model"] --> ViewModel["ViewModel<br/>(Boundable)"]
-            ViewModel -->|"bound(to:)"| View1["View<br/>(Configurable)"]
+            ViewModel -->|"apply(to:)"| View1["View<br/>(Configurable)"]
         end
 
         subgraph Outbound["🔴 Outbound (User Events)"]
