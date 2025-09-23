@@ -27,6 +27,8 @@ public struct SenderGroup: EventForwardable {
         forwarders.flatMap { $0.allMappings }
     }
 
+    public var allSenders: [AnyObject] { forwarders.flatMap { $0.allSenders } }
+
     public func actions(for sender: AnyObject, event: SenderEvent) -> [Any] {
         forwarders.flatMap { $0.actions(for: sender, event: event) }
     }
