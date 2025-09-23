@@ -37,6 +37,12 @@ public protocol EventForwardable {
     /// when dynamically attaching targets or observing available events at runtime.
     var allMappings: [(sender: AnyObject, event: SenderEvent, actions: [Any])] { get }
 
+    /// All unique sender objects managed by this forwarder.
+    ///
+    /// Unlike ``allMappings``, this property does **not** evaluate
+    /// lazy action closures, making it efficient for state propagation.
+    var allSenders: [AnyObject] { get }
+
     /// Returns the actions for a given sender and event.
     ///
     /// Retrieves the actions to forward when a sender triggers an event.
@@ -47,4 +53,9 @@ public protocol EventForwardable {
     ///   - event: The event that occurred.
     /// - Returns: An array of actions to forward.
     func actions(for sender: AnyObject, event: SenderEvent) -> [Any]
+}
+
+extension EventForwardable {
+    @inlinable
+    public var allSenders: [AnyObject] { allMappings.map(\.sender) }
 }

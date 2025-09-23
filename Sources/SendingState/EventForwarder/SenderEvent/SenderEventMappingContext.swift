@@ -26,6 +26,18 @@ import UIKit
 /// The action closure is evaluated lazily at event time, allowing
 /// you to capture real-time sender state (e.g., `sender.isOn`, `sender.value`).
 public struct SenderEventMappingContext {
+    /// The sender whose `boundState` is read at event time.
+    private let senderRef: AnyObject?
+
+    /// Creates a context without a sender reference.
+    init() {
+        self.senderRef = nil
+    }
+
+    /// Creates a context bound to a sender for state-aware overloads.
+    init(sender: AnyObject) {
+        self.senderRef = sender
+    }
     #if os(iOS) || targetEnvironment(macCatalyst)
     /// Creates a control event mapping.
     ///
