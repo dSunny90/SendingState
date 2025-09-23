@@ -34,17 +34,22 @@ public struct EventForwarder<Sender: AnyObject>: EventForwardable {
         _ content: (Sender, SenderEventMappingContext) -> [SenderEvent: () -> [Action]]
     ) {
         senderRef = sender
-        let ctx = SenderEventMappingContext()
+        let ctx = SenderEventMappingContext(sender: sender)
         mappings = content(sender, ctx).mapValues { actionProvider in
             { actionProvider().map { $0 as Any } }
         }
     }
+
+    // MARK: - EventForwardable
 
     public var allMappings: [
         (sender: AnyObject, event: SenderEvent, actions: [Any])
     ] {
         mappings.map { (sender: senderRef, event: $0.key, actions: $0.value()) }
     }
+
+    @inlinable
+    public var allSenders: [AnyObject] { [senderRef] }
 
     public func actions(for sender: AnyObject, event: SenderEvent) -> [Any] {
         guard sender === senderRef else { return [] }

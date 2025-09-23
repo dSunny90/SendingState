@@ -21,6 +21,10 @@ public struct AnyEventForwarder: EventForwardable {
         (sender: AnyObject, event: SenderEvent, actions: [Any])
     ]
 
+    /// A closure that returns all unique senders without evaluating
+    /// lazy action closures.
+    private let _allSenders: () -> [AnyObject]
+
     /// Creates a type-erased wrapper from an `EventForwardable` conformer.
     ///
     /// - Parameter base: The `EventForwardable` conformer to wrap.
@@ -29,13 +33,18 @@ public struct AnyEventForwarder: EventForwardable {
     ) {
         _actions = base.actions
         _allMappings = { base.allMappings }
+        _allSenders = { base.allSenders }
     }
+
+    // MARK: - EventForwardable
 
     public var allMappings: [
         (sender: AnyObject, event: SenderEvent, actions: [Any])
     ] {
         _allMappings()
     }
+
+    public var allSenders: [AnyObject] { _allSenders() }
 
     public func actions(for sender: AnyObject, event: SenderEvent) -> [Any] {
         _actions(sender, event)
