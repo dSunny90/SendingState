@@ -65,6 +65,7 @@ public protocol Configurable: AnyObject {
 }
 
 public extension Configurable {
+    @inlinable
     nonisolated static func size(with input: Input?,
                                  constrainedTo parentSize: CGSize?) -> CGSize? {
         return nil

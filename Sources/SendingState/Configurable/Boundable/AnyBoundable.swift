@@ -20,6 +20,7 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
     /// An optional identifier for distinguishing this instance.
     public var identifier: String? { _identifier() }
 
+    @usableFromInline
     internal let uuid: UUID = UUID()
 
     private let _contentData: () -> Any?
@@ -68,10 +69,12 @@ public struct AnyBoundable: Hashable, @unchecked Sendable {
     }
 
     // MARK: - Hashable
+    @inlinable
     public func hash(into hasher: inout Hasher) {
         hasher.combine(uuid)
     }
 
+    @inlinable
     public static func == (lhs: AnyBoundable, rhs: AnyBoundable) -> Bool {
         return lhs.uuid == rhs.uuid
     }
