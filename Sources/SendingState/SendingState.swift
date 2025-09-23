@@ -13,6 +13,8 @@
 /// extensions.
 public struct SendingState<Base> {
     public let base: Base
+
+    @inlinable
     public init(_ base: Base) { self.base = base }
 }
 
@@ -20,7 +22,10 @@ public struct SendingState<Base> {
 /// `SendingState<Self>`, enabling the library's extensions.
 public protocol SendingStateHost {}
 extension SendingStateHost {
+    @inlinable
     public var ss: SendingState<Self> { SendingState(self) }
+
+    @inlinable
     public static var ss: SendingState<Self>.Type { SendingState<Self>.self }
 }
 

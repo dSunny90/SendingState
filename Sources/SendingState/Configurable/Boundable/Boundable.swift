@@ -27,6 +27,7 @@ public protocol Boundable: Sendable {
 }
 
 public extension Boundable {
+    @inlinable
     var identifier: String? { nil }
 
     /// Applies `contentData` to the binder using its `configurer`.
@@ -44,8 +45,10 @@ public extension Boundable {
     ///
     /// Preserves binding behavior while hiding the concrete type.
     /// - Returns: A type-erased wrapper.
+    @inlinable
     func eraseToAnyBoundable() -> AnyBoundable { AnyBoundable(self) }
 }
+
 #if os(iOS) || targetEnvironment(macCatalyst)
 import UIKit
 
