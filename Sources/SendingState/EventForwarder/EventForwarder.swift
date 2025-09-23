@@ -14,7 +14,8 @@
 @MainActor
 public struct EventForwarder<Sender: AnyObject>: EventForwardable {
     /// The sender associated with this forwarder.
-    private let senderRef: Sender
+    @usableFromInline
+    internal let senderRef: Sender
 
     /// The mappings from sender events to their corresponding action providers.
     /// Closures are stored to enable lazy evaluation at event time,

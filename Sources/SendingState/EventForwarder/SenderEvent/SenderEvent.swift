@@ -30,12 +30,15 @@ public enum SenderEvent: Hashable, @unchecked Sendable {
     /// Enables control events (e.g., `.touchUpInside`) to be used as keys
     /// for action mappings.
     public struct Control: Hashable {
-        private let rawValue: UIControl.Event.RawValue
+        @usableFromInline
+        internal let rawValue: UIControl.Event.RawValue
 
+        @inlinable
         public init(_ event: UIControl.Event) {
             self.rawValue = event.rawValue
         }
 
+        @inlinable
         public var value: UIControl.Event {
             UIControl.Event(rawValue: rawValue)
         }
@@ -57,6 +60,7 @@ public enum SenderEvent: Hashable, @unchecked Sendable {
         public struct Kind: OptionSet, Hashable, @unchecked Sendable {
             public let rawValue: UInt
 
+            @inlinable
             public init(rawValue: UInt) {
                 self.rawValue = rawValue
             }
