@@ -11,10 +11,10 @@
 It defines two main channels:
 
 - **🟢 Inbound (Configurable + Boundable)**
-  Components receive models for configuration. View models deliver state snapshots to views through one-way binding.
+  Components receive models for configuration. View models deliver state snapshots to views through one-way binding. The configured state is automatically propagated to all senders (buttons, controls).
 
-- **🔴 Outbound (EventForwarder)**  
-  User interactions are forwarded as declarative actions.  
+- **🔴 Outbound (EventForwarder)**
+  User interactions are forwarded as declarative actions. Action closures can access the bound state directly — no manual state passing needed.
 
 ```mermaid
 flowchart LR
@@ -25,11 +25,12 @@ flowchart LR
             direction TB
             Model["Model"] --> ViewModel["ViewModel<br/>(Boundable)"]
             ViewModel -->|"apply(to:)"| View1["View<br/>(Configurable)"]
+            View1 -->|"state propagation"| Senders["Senders<br/>(Buttons, Controls)"]
         end
 
         subgraph Outbound["🔴 Outbound (User Events)"]
             direction TB
-            View2["View<br/>(EventForwardingProvider)"] -->|"👆 User Interaction"| ViewController["View Controller<br/>(ActionHandlingProvider)"]
+            View2["View<br/>(EventForwardingProvider)"] -->|"👆 User Interaction<br/>(+ bound state)"| ViewController["View Controller<br/>(ActionHandlingProvider)"]
         end
     end
 
@@ -271,6 +272,90 @@ For collections of views driven by arrays of data, use `AnyBoundable` to erase t
 4. Use `aView.ss.addActionHandler(to: self.interactor)` to connect the flow
     
 Your business logic is now cleanly separated and elegantly handled.
+
+### State:
+
+When you call `ss.configure(model)`, the model is automatically stored as **state** on both the view and all its senders (buttons, switches, etc.). This means your `EventForwarder` closures can access the configured data at event time — no manual state passing required.
+
+```mermaid
+sequenceDiagram
+    participant VC as ViewController
+    participant Cell as Cell<br/>(Configurable +<br/>EventForwardingProvider)
+    participant Obs as StateObserver
+    participant Ctx as Context<br/>(SenderEventMappingContext)
+    participant Btn as Button<br/>(Sender)
+
+    VC->>Cell: cell.ss.configure(model)
+    Cell-->>Obs: update(model)
+    Obs-->>Cell: cell.boundState = model
+    Obs-->>Cell: configurer(cell, model)
+    Obs->>Btn: button.boundState = model
+
+    Note over Btn: User taps button
+
+    Btn->>Cell: eventForwarder.actions(for: button, event: .touchUpInside)
+    Cell->>Ctx: evaluate an action closure
+    Ctx-->>Btn: resolveState()
+    Btn-->>Ctx: state
+    Ctx->>Cell: [.buttonTapped(state.id)]
+    Cell->>VC: handle(action: .buttonTapped(model.id))
+```
+
+#### Accessing state
+
+On binder (Configurable) — the compiler infers the `Input` type automatically:
+
+```swift
+let model = cell.ss.state()  // → MyModel?
+```
+
+On sender (UIButton, etc.) — type annotation required:
+
+```swift
+let model: MyModel? = button.ss.state()
+```
+
+#### State-aware EventForwarder
+
+Instead of manually calling `sender.ss.state()` inside closures, use the **state-aware overload** to receive typed state directly as a closure parameter:
+
+```swift
+class MyCell: UITableViewCell, Configurable, EventForwardingProvider {
+    let button = UIButton()
+
+    var configurer: (MyCell, MyModel) -> Void {
+        { cell, model in
+            cell.button.setTitle(model.title, for: .normal)
+        }
+    }
+
+    var eventForwarder: EventForwardable {
+        EventForwarder(button) { _, ctx in
+            ctx.control(.touchUpInside) { (state: MyModel) in
+                [MyAction.buttonTapped(state.id)]
+            }
+        }
+    }
+}
+```
+
+The state is resolved lazily at **event time** (when the user taps the button), not at setup time. This means it always reflects the latest configured model — even after cell reuse with new data.
+
+All `SenderEventMappingContext` methods support both signatures:
+
+```swift
+// Without state — captures sender directly
+ctx.control(.touchUpInside) {
+    [MyAction.buttonTapped(sender.tag)]
+}
+
+// With state — receives typed model from boundState
+ctx.control(.touchUpInside) { (state: MyModel) in
+    [MyAction.buttonTapped(state.id)]
+}
+```
+
+This also works with gesture mappings: `tapGesture`, `longPressGesture`, `swipeGesture`, `panGesture`, `pinchGesture`, `rotationGesture`, `screenEdgeGesture`, and `hoverGesture`.
 
 #### Type-Erased Handler with `attach(to:)` / `detach(from:)`
 
