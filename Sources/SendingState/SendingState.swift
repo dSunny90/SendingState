@@ -5,6 +5,8 @@
 //  Created by SunSoo Jeon on 23.11.2020.
 //
 
+import Foundation
+
 /// A namespace wrapper that provides SendingState functionality
 /// through the `.ss` accessor.
 ///
@@ -42,14 +44,47 @@ fileprivate typealias ActionHandlerBlock =
     (_ sender: AnyObject, _ event: SenderEvent) -> (_ sender: AnyObject) -> Void
 
 extension SendingState where Base: Configurable {
-    /// Applies the given input to the base object via its `configurer`.
+    /// Applies the given input to the base object via its `configurer`,
+    /// automatically storing the input as the object's state.
     ///
-    /// This is a convenience for `base.configurer(base, input)`.
-    /// Because `Configurable` is `@MainActor`-isolated, this method
-    /// must also be called on the main actor.
+    /// When the base is an `NSObject` (e.g., `UIView`), an internal
+    /// ``StateObserver`` is lazily created and attached. The observer:
+    /// 1. Stores the input as the current state
+    /// 2. Calls the base's `configurer` to update the UI
+    /// 3. Propagates the state to all senders if the base conforms to
+    ///    ``EventForwardingProvider``
+    ///
+    /// For non-`NSObject` bases, falls back to direct `configurer` invocation.
     @MainActor
     public func configure<T>(_ input: T) where T == Base.Input {
-        base.configurer(base, input)
+        guard let object = base as? NSObject else {
+            base.configurer(base, input)
+            return
+        }
+        let observer = ensureObserver(on: object)
+        observer.update(input)
+    }
+
+    @MainActor
+    private func ensureObserver(on object: NSObject) -> StateObserver {
+        if let existing = object.stateObserver {
+            return existing
+        }
+
+        let observer = StateObserver()
+        observer.binder = object
+        observer.configureBlock = { [weak base] state in
+            guard let base, let input = state as? Base.Input else { return }
+            base.configurer(base, input)
+        }
+        if let forwarder = base as? EventForwardingProvider {
+            observer.senderProvider = { [weak forwarder] in
+                (forwarder?.eventForwarder.allSenders ?? [])
+                    .compactMap { $0 as? NSObject }
+            }
+        }
+        object.stateObserver = observer
+        return observer
     }
 }
 
